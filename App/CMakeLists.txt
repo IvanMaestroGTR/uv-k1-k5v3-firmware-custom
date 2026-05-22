@@ -22,6 +22,7 @@ target_sources(App INTERFACE
     app/common.c
     app/dtmf.c
     app/generic.c
+    app/mdc1200.c
     app/main.c
     app/menu.c
     app/scanner.c
