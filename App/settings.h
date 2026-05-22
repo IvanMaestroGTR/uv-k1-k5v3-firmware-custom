@@ -309,6 +309,7 @@ typedef struct {
     uint8_t               S0_LEVEL;
     uint8_t               S9_LEVEL;
 #endif
+    uint16_t              MDC1200_ID;
 } EEPROM_Config_t;
 
 extern EEPROM_Config_t gEeprom;

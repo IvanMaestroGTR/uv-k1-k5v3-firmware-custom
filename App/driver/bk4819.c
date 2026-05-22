@@ -1732,7 +1732,8 @@ static void BK4819_PlayRogerNormal(void)
 
 
     BK4819_EnterTxMute();
-    BK4819_SetAF(BK4819_AF_MUTE);
+    AUDIO_AudioPathOn();
+    BK4819_SetAF(BK4819_AF_BEEP);
 
     BK4819_WriteRegister(BK4819_REG_70, BK4819_REG_70_ENABLE_TONE1 | (66u << BK4819_REG_70_SHIFT_TONE1_TUNING_GAIN));
 
@@ -1753,64 +1754,154 @@ static void BK4819_PlayRogerNormal(void)
 
     BK4819_WriteRegister(BK4819_REG_70, 0x0000);
     BK4819_WriteRegister(BK4819_REG_30, 0xC1FE);   // 1 1 0000 0 1 1111 1 1 1 0
-}
-
-
-void BK4819_PlayRogerMDC(void)
-{
-    struct reg_value {
-        BK4819_REGISTER_t reg;
-        uint16_t value;
-    };
-
-    struct reg_value RogerMDC_Configuration [] = {
-        { BK4819_REG_58, 0x37C3 },  // FSK Enable,
-                                        // RX Bandwidth FFSK 1200/1800
-                                        // 0xAA or 0x55 Preamble
-                                        // 11 RX Gain,
-                                        // 101 RX Mode
-                                        // TX FFSK 1200/1800
-        { BK4819_REG_72, 0x3065 },  // Set Tone-2 to 1200Hz
-        { BK4819_REG_70, 0x00E0 },  // Enable Tone-2 and Set Tone2 Gain
-        { BK4819_REG_5D, 0x0D00 },  // Set FSK data length to 13 bytes
-        { BK4819_REG_59, 0x8068 },  // 4 byte sync length, 6 byte preamble, clear TX FIFO
-        { BK4819_REG_59, 0x0068 },  // Same, but clear TX FIFO is now unset (clearing done)
-        { BK4819_REG_5A, 0x5555 },  // First two sync bytes
-        { BK4819_REG_5B, 0x55AA },  // End of sync bytes. Total 4 bytes: 555555aa
-        { BK4819_REG_5C, 0xAA30 },  // Disable CRC
-    };
-
-    BK4819_SetAF(BK4819_AF_MUTE);
-
-    for (unsigned int i = 0; i < ARRAY_SIZE(RogerMDC_Configuration); i++) {
-        BK4819_WriteRegister(RogerMDC_Configuration[i].reg, RogerMDC_Configuration[i].value);
-    }
-
-    // Send the data from the roger table
-    for (unsigned int i = 0; i < ARRAY_SIZE(FSK_RogerTable); i++) {
-        BK4819_WriteRegister(BK4819_REG_5F, FSK_RogerTable[i]);
-    }
-
-    SYSTEM_DelayMs(20);
-
-    // 4 sync bytes, 6 byte preamble, Enable FSK TX
-    BK4819_WriteRegister(BK4819_REG_59, 0x0868);
-
-    SYSTEM_DelayMs(180);
-
-    // Stop FSK TX, reset Tone-2, disable FSK
-    BK4819_WriteRegister(BK4819_REG_59, 0x0068);
-    BK4819_WriteRegister(BK4819_REG_70, 0x0000);
-    BK4819_WriteRegister(BK4819_REG_58, 0x0000);
+    
+    AUDIO_AudioPathOff();
 }
 
 void BK4819_PlayRoger(void)
 {
     if (gEeprom.ROGER == ROGER_MODE_ROGER) {
         BK4819_PlayRogerNormal();
-    } else if (gEeprom.ROGER == ROGER_MODE_MDC) {
-        BK4819_PlayRogerMDC();
     }
+    else if (gEeprom.ROGER == ROGER_MODE_MDC) {
+        // Mute mic before POST-ID MDC delay
+        BK4819_MuteMic();
+        
+        // small delay before sending the POST-ID MDC packet (≈100 ms)
+        SYSTEM_DelayMs(50);
+
+        // Send POST-ID MDC with 4 preambles and ID 0x0088
+        BK4819_send_MDC1200(0x01, 0x00, 0x0088, 4);
+        
+        // Short delay after POST-ID MDC before ending TX (20ms) - mic stays muted
+        SYSTEM_DelayMs(20);
+    }
+}
+
+void BK4819_send_MDC1200(const uint8_t op, const uint8_t arg, const uint16_t id, const uint8_t preamble_duration)
+{
+    uint16_t fsk_reg59;
+    uint8_t  packet[42];
+    uint8_t  combined_packet[256];  // Large buffer for preamble (up to 10 cycles) + MDC
+    unsigned int combined_size = 0;
+    
+    // Create the MDC1200 packet
+    const unsigned int mdc_size = MDC1200_encode_single_packet(packet, op, arg, id);
+    
+    // Build preamble: alternating 1800Hz and 1200Hz for N cycles
+    // 1800Hz = 0x00 (space), 1200Hz = 0xFF (mark)
+    {
+        unsigned int preamble_cycle; //cool motorola long preamble
+        
+        // Build preamble in combined buffer
+        for (preamble_cycle = 0; preamble_cycle < preamble_duration; preamble_cycle++) {
+            // First 1800Hz is longer to match Motorola spec (3 bytes = ~20ms for short preamble)
+            // Subsequent cycles are normal (4 bytes = ~25ms)
+            unsigned int first_1800_size = (preamble_cycle == 0) ? 1 : 4;
+            
+            // Add 1800Hz (0x00) - first is 3 bytes, rest are 4 bytes
+            memset(combined_packet + combined_size, 0x00, first_1800_size);
+            combined_size += first_1800_size;
+            
+            // Add 1200Hz (0xFF) for 20ms = 3 bytes (immediately after, no gap)
+            memset(combined_packet + combined_size, 0xFF, 3);
+            combined_size += 3;
+        }
+    }
+    
+    // Append MDC packet immediately after preamble (no spacing)
+    memcpy(combined_packet + combined_size, packet, mdc_size);
+    combined_size += mdc_size;
+
+    // Setup FSK modem for entire combined transmission
+    BK4819_WriteRegister(0x58,
+        (1u << 13) |  // FSK TX mode: FFSK 1200/1800
+        (7u << 10) |  // FSK RX mode: FFSK 1200/1800
+        (0u << 8) |   // FSK RX gain
+        (0u << 6) |   // ???
+        (0u << 4) |   // FSK preamble type
+        (1u << 1) |   // FSK RX bandwidth
+        (1u << 0));   // FSK enable
+ 
+    // Set tone frequencies
+    BK4819_WriteRegister(0x72, scale_freq(1200));  // tone-2 = 1200Hz
+    BK4819_WriteRegister(0x70,
+        (0u << 15) |  // TONE-1 disable
+        (0u << 8) |   // TONE-1 tuning
+        (1u << 7) |   // TONE-2 enable
+        (MDC_FSK_TX_GAIN << 0));  // TONE-2 gain (configurable)
+
+    // Setup FSK register 0x59
+    fsk_reg59 = (0u << 15) |  // clear TX FIFO
+                (0u << 14) |  // clear RX FIFO
+                (0u << 13) |  // scramble
+                (0u << 12) |  // enable RX
+                (0u << 11) |  // enable TX
+                (0u << 10) |  // invert RX
+                (0u << 9) |   // invert TX
+                (0u << 8) |   // ???
+                (0u << 4) |   // preamble length (minimum)
+                (1u << 3) |   // sync length
+                (0u << 0);    // ???
+
+    // Sync bytes
+    BK4819_WriteRegister(0x5A, 0x0000);
+    BK4819_WriteRegister(0x5B, 0x0000);
+
+    // CRC setting
+    BK4819_WriteRegister(0x5C, 0x5625);
+
+    // Set packet length for entire combined packet
+    BK4819_WriteRegister(0x5D, ((combined_size - 1) << 8));
+
+    // Clear and release FIFO
+    BK4819_WriteRegister(0x59, (1u << 15) | (1u << 14) | fsk_reg59);
+    BK4819_WriteRegister(0x59, fsk_reg59);
+
+    // Load entire combined packet (preamble + MDC) into FIFO, skipping initial 2 mdc1200_pre_amble bytes
+    // Load as 16-bit words, then handle any remaining byte
+    {
+        unsigned int i;
+        const uint16_t *p = (const uint16_t *)(combined_packet + 2);  // Start from offset 2 to skip {0x00, 0xFF}
+        const uint8_t *p8 = combined_packet;
+        unsigned int load_size = (combined_size > 2) ? (combined_size - 2) : 0;
+        
+        // Load all complete 16-bit words
+        for (i = 0; i < (load_size / 2); i++)
+            BK4819_WriteRegister(0x5F, p[i]);
+        
+        // If there's an odd byte remaining, load it as the low byte of a 16-bit word
+        if (load_size & 1) {
+            BK4819_WriteRegister(0x5F, (uint16_t)p8[2 + load_size - 1]);
+        }
+    }
+
+    // Enable TX interrupt
+    BK4819_WriteRegister(0x3F, BK4819_REG_3F_FSK_TX_FINISHED);
+
+    // Enable FSK TX
+    BK4819_WriteRegister(0x59, (1u << 11) | fsk_reg59);
+
+    // Wait for TX to complete
+    {
+        unsigned int timeout = 500 / 4;  // Increased timeout for longer combined packet
+        while (timeout-- > 0) {
+            SYSTEM_DelayMs(4);
+            if (BK4819_ReadRegister(0x0C) & (1u << 0)) {
+                BK4819_WriteRegister(0x02, 0);
+                if (BK4819_ReadRegister(0x02) & BK4819_REG_02_FSK_TX_FINISHED)
+                    timeout = 0;
+            }
+        }
+    }
+
+    // Cleanup
+    BK4819_WriteRegister(0x59, fsk_reg59);
+    BK4819_WriteRegister(0x3F, 0);
+    BK4819_WriteRegister(0x70, 0);
+    BK4819_WriteRegister(0x58, 0);
+
+    return;
 }
 
 void BK4819_Enable_AfDac_DiscMode_TxDsp(void)

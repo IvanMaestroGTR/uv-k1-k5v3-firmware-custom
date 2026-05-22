@@ -295,6 +295,7 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
     gEeprom.REPEATER_TAIL_TONE_ELIMINATION = (Data[2] < 11) ? Data[2] : 0;
     gEeprom.TX_VFO                         = (Data[3] <  2) ? Data[3] : 0;
     gEeprom.BATTERY_TYPE                   = (Data[4] < BATTERY_TYPE_UNKNOWN) ? Data[4] : BATTERY_TYPE_1600_MAH;
+    gEeprom.MDC1200_ID                     = ((uint16_t)Data[6] << 8) | Data[5];
 
     // 0ED0..0ED7
     PY25Q16_ReadBuffer(0x00A0A8 + 0x40, Data, 8);
@@ -1002,6 +1003,8 @@ void SETTINGS_SaveSettings(void)
     State[2] = gEeprom.REPEATER_TAIL_TONE_ELIMINATION;
     State[3] = gEeprom.TX_VFO;
     State[4] = gEeprom.BATTERY_TYPE;
+    State[5] = gEeprom.MDC1200_ID & 0xFF;
+    State[6] = (gEeprom.MDC1200_ID >> 8) & 0xFF;
 
     // 0x0ED0
     State = SecBuf + 0x40;
