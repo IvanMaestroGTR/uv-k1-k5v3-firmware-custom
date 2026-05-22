@@ -41,6 +41,7 @@ fi
 # ---------------------------------------------
 rm -rf build
 export MSYS_NO_PATHCONV=1
+
 # ---------------------------------------------
 # Function to build one preset
 # ---------------------------------------------
@@ -49,9 +50,16 @@ build_preset() {
   echo ""
   echo "=== 🚀 Building preset: ${preset} ==="
   echo "---------------------------------------------"
+
+  # Detect if a TTY is available. If not (like in GitHub Actions CI), drop the -i flag.
+  local interactive_flag="-i"
+  if [ ! -t 0 ]; then
+    interactive_flag=""
+  fi
+
   docker run --rm \
     -u $(id -u):$(id -g) \
-    -i -v "$PWD":/src -w /src "$IMAGE" \
+    $interactive_flag -v "$PWD":/src -w /src "$IMAGE" \
     bash -c "which arm-none-eabi-gcc && arm-none-eabi-gcc --version && \
              cmake --preset ${preset} ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"} && \
              cmake --build --preset ${preset} -j"
