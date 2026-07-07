@@ -4,7 +4,7 @@
 
 // Keep all original constants (TX-only)
 static const uint8_t mdc1200_pre_amble[] = {0x00, 0xFF};
-static const uint8_t mdc1200_sync[5] = {0x07, 0x09, 0x2a, 0x44, 0x6f};
+const uint8_t mdc1200_sync[5] = {0x07, 0x09, 0x2a, 0x44, 0x6f};
 
 void xor_modulation(void *data, const unsigned int size) {
     unsigned int i;
