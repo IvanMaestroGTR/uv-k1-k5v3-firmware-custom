@@ -1858,6 +1858,10 @@ void BK4819_send_MDC1200(const uint8_t op, const uint8_t arg, const uint16_t id,
     BK4819_WriteRegister(0x59, (1u << 15) | (1u << 14) | 0x0068);
     BK4819_WriteRegister(0x59, 0x0068);
 
+    BK4819_EnableTXLink();
+    SYSTEM_DelayMs(5);
+    BK4819_ExitTxMute();
+
     {
         unsigned int i;
         const uint16_t *p16 = (const uint16_t *)payload;
@@ -1887,6 +1891,8 @@ void BK4819_send_MDC1200(const uint8_t op, const uint8_t arg, const uint16_t id,
     BK4819_WriteRegister(0x3F, 0);
     BK4819_WriteRegister(0x70, 0);
     BK4819_WriteRegister(0x58, 0);
+    BK4819_EnterTxMute();
+    BK4819_WriteRegister(0x30, 0xC1FE);
 }
 
 void BK4819_PlayRoger(BK4819_FilterBandwidth_t Bandwidth)

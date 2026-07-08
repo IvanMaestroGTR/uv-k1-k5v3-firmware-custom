@@ -1771,6 +1771,8 @@ static void BK4819_PlayRogerNormal(BK4819_FilterBandwidth_t Bandwidth)
 }
 
 
+void BK4819_send_MDC1200(const uint8_t op, const uint8_t arg, const uint16_t id, const uint8_t preamble_duration);
+
 void BK4819_PlayRogerMDC(void)
 {
     BK4819_EnterTxMute();
@@ -1819,6 +1821,10 @@ void BK4819_send_MDC1200(const uint8_t op, const uint8_t arg, const uint16_t id,
     BK4819_WriteRegister(BK4819_REG_59, (1u << 15) | (1u << 14) | 0x0068);
     BK4819_WriteRegister(BK4819_REG_59, 0x0068);
 
+    BK4819_EnableTXLink();
+    SYSTEM_DelayMs(5);
+    BK4819_ExitTxMute();
+
     {
         unsigned int i;
         const uint16_t *p16 = (const uint16_t *)payload;
@@ -1847,6 +1853,8 @@ void BK4819_send_MDC1200(const uint8_t op, const uint8_t arg, const uint16_t id,
     BK4819_WriteRegister(BK4819_REG_3F, 0);
     BK4819_WriteRegister(BK4819_REG_70, 0);
     BK4819_WriteRegister(BK4819_REG_58, 0);
+    BK4819_EnterTxMute();
+    BK4819_WriteRegister(BK4819_REG_30, 0xC1FE);
 }
 
 void BK4819_PlayRoger(BK4819_FilterBandwidth_t Bandwidth)
