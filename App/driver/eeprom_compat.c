@@ -135,18 +135,20 @@ static void AddrTranslate(uint16_t EEPROM_Addr, uint16_t Size, uint32_t *PY25Q16
     return;
 
 HIT:
-    const uint16_t Off = EEPROM_Addr - p->EEPROM_Addr;
-    const uint16_t Rem = p->Size - Off;
-    if (Size > Rem)
     {
-        Size = Rem;
-    }
+        const uint16_t Off = EEPROM_Addr - p->EEPROM_Addr;
+        const uint16_t Rem = p->Size - Off;
+        if (Size > Rem)
+        {
+            Size = Rem;
+        }
 
-    *PY25Q16_Addr_out = HOLE_ADDR == p->PY25Q16_Addr ? HOLE_ADDR : (p->PY25Q16_Addr + Off);
-    *Size_out = Size;
+        *PY25Q16_Addr_out = HOLE_ADDR == p->PY25Q16_Addr ? HOLE_ADDR : (p->PY25Q16_Addr + Off);
+        *Size_out = Size;
 
-    if (End_out && HOLE_ADDR != p->PY25Q16_Addr)
-    {
-        *End_out = (Size == Rem);
+        if (End_out && HOLE_ADDR != p->PY25Q16_Addr)
+        {
+            *End_out = (Size == Rem);
+        }
     }
 }

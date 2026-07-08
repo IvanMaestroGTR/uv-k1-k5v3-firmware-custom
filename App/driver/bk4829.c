@@ -1811,30 +1811,30 @@ static void BK4819_PlayRogerNormal(BK4819_FilterBandwidth_t Bandwidth)
 
 void BK4819_PlayRogerMDC(void)
 {
-    // Use MDC1200 send routine to transmit POST-ID
-    // Small delay before sending the POST-ID MDC packet (≈25 ms)
     BK4819_EnterTxMute();
+    BK4819_SetAF(BK4819_AF_MUTE);
+
+    // Small delay before sending the POST-ID MDC packet (≈25 ms)
     SYSTEM_DelayMs(25);
-    // Temporary fixed MDC ID for testing
+
+    // Hardcoded MDC ID for now
     BK4819_send_MDC1200(0x01, 0x00, 0x0088, 5);
+
+    // Short delay after POST-ID MDC before ending TX (20 ms)
     SYSTEM_DelayMs(20);
 }
 
 // Send MDC1200 packet (ported from Test1)
 void BK4819_send_MDC1200(const uint8_t op, const uint8_t arg, const uint16_t id, const uint8_t preamble_duration)
 {
-
-    uint16_t fsk_reg59 = 0x0068; // base FSK config (preamble/sync settings)
-    uint8_t  packet[64];
-    // Create the MDC1200 packet (packet contains 2-byte preamble + 5-byte sync + payload)
+    uint8_t packet[42];
     const unsigned int mdc_size = MDC1200_encode_single_packet(packet, op, arg, id);
 
-    // Configure modem registers per BK4829 reference
-    BK4819_WriteRegister(0x58, 0x37C3); // FSK enable, 1200/1800 mode, etc. (per ref)
+    // Configure modem registers per the reference MDC1200 flow
+    BK4819_WriteRegister(0x58, 0x37C3);
     BK4819_WriteRegister(0x72, scale_freq(1200));
-    BK4819_WriteRegister(0x70, 0x00E0); // Enable Tone-2 and set gain per ref
+    BK4819_WriteRegister(0x70, 0x00E0);
 
-    // Set sync registers from the encoded packet (packet[2..6] == sync[5])
     if (mdc_size >= 7) {
         const uint8_t *p8 = packet;
         uint16_t sync_ab = ((uint16_t)p8[2] << 8) | p8[3];
@@ -1849,37 +1849,31 @@ void BK4819_send_MDC1200(const uint8_t op, const uint8_t arg, const uint16_t id,
         BK4819_WriteRegister(0x5C, 0x0030);
     }
 
-    // Payload starts after packet preamble+sync (2 + 5 = 7 bytes)
     const uint8_t *payload = packet + 7;
     unsigned int payload_size = (mdc_size > 7) ? (mdc_size - 7) : 0;
 
-    // Set packet length (bytes) for FSK TX
     if (payload_size > 0)
         BK4819_WriteRegister(0x5D, ((payload_size - 1) << 8));
     else
         BK4819_WriteRegister(0x5D, 0);
 
-    // Clear and release FIFO
-    BK4819_WriteRegister(0x59, (1u << 15) | (1u << 14) | fsk_reg59);
-    BK4819_WriteRegister(0x59, fsk_reg59);
+    BK4819_WriteRegister(0x3F, BK4819_REG_3F_FSK_TX_FINISHED);
+    BK4819_WriteRegister(0x59, (1u << 15) | (1u << 14) | 0x0068);
+    BK4819_WriteRegister(0x59, 0x0068);
 
-    // Load FIFO with payload as 16-bit words
     {
         unsigned int i;
         const uint16_t *p16 = (const uint16_t *)payload;
         for (i = 0; i < (payload_size / 2); i++)
             BK4819_WriteRegister(0x5F, p16[i]);
         if (payload_size & 1) {
-            // last odd byte
             const uint8_t last = payload[payload_size - 1];
             BK4819_WriteRegister(0x5F, (uint16_t)last);
         }
     }
 
-    BK4819_WriteRegister(0x3F, BK4819_REG_3F_FSK_TX_FINISHED);
-    BK4819_WriteRegister(0x59, (1u << 11) | fsk_reg59);
+    BK4819_WriteRegister(0x59, (1u << 11) | 0x0068);
 
-    // Wait for TX to complete (poll)
     {
         unsigned int timeout = 500 / 4;
         while (timeout-- > 0) {
@@ -1892,13 +1886,10 @@ void BK4819_send_MDC1200(const uint8_t op, const uint8_t arg, const uint16_t id,
         }
     }
 
-    // Cleanup
-    BK4819_WriteRegister(0x59, fsk_reg59);
+    BK4819_WriteRegister(0x59, 0x0068);
     BK4819_WriteRegister(0x3F, 0);
     BK4819_WriteRegister(0x70, 0);
     BK4819_WriteRegister(0x58, 0);
-
-    return;
 }
 
 void BK4819_PlayRoger(BK4819_FilterBandwidth_t Bandwidth)
