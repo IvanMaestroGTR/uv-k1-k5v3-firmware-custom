@@ -27,13 +27,12 @@
 #include "driver/gpio.h"
 #include "driver/system.h"
 #include "driver/systick.h"
-
+#include "app/mdc1200.h"
+#include <string.h>
 
 #define PIN_CSN GPIO_MAKE_PIN(GPIOF, LL_GPIO_PIN_9)
 #define PIN_SCL GPIO_MAKE_PIN(GPIOB, LL_GPIO_PIN_8)
 #define PIN_SDA GPIO_MAKE_PIN(GPIOB, LL_GPIO_PIN_9)
-
-static const uint16_t FSK_RogerTable[7] = {0xF1A2, 0x7446, 0x61A4, 0x6544, 0x4E8A, 0xE044, 0xEA84};
 
 static const uint8_t DTMF_TONE1_GAIN = 65;
 static const uint8_t DTMF_TONE2_GAIN = 93;
@@ -1774,50 +1773,80 @@ static void BK4819_PlayRogerNormal(BK4819_FilterBandwidth_t Bandwidth)
 
 void BK4819_PlayRogerMDC(void)
 {
-    struct reg_value {
-        BK4819_REGISTER_t reg;
-        uint16_t value;
-    };
-
-    struct reg_value RogerMDC_Configuration [] = {
-        { BK4819_REG_58, 0x37C3 },  // FSK Enable,
-                                        // RX Bandwidth FFSK 1200/1800
-                                        // 0xAA or 0x55 Preamble
-                                        // 11 RX Gain,
-                                        // 101 RX Mode
-                                        // TX FFSK 1200/1800
-        { BK4819_REG_72, 0x3065 },  // Set Tone-2 to 1200Hz
-        { BK4819_REG_70, 0x00E0 },  // Enable Tone-2 and Set Tone2 Gain
-        { BK4819_REG_5D, 0x0D00 },  // Set FSK data length to 13 bytes
-        { BK4819_REG_59, 0x8068 },  // 4 byte sync length, 6 byte preamble, clear TX FIFO
-        { BK4819_REG_59, 0x0068 },  // Same, but clear TX FIFO is now unset (clearing done)
-        { BK4819_REG_5A, 0x5555 },  // First two sync bytes
-        { BK4819_REG_5B, 0x55AA },  // End of sync bytes. Total 4 bytes: 555555aa
-        { BK4819_REG_5C, 0xAA30 },  // Disable CRC
-    };
-
+    BK4819_EnterTxMute();
     BK4819_SetAF(BK4819_AF_MUTE);
 
-    for (unsigned int i = 0; i < ARRAY_SIZE(RogerMDC_Configuration); i++) {
-        BK4819_WriteRegister(RogerMDC_Configuration[i].reg, RogerMDC_Configuration[i].value);
-    }
+    SYSTEM_DelayMs(25);
 
-    // Send the data from the roger table
-    for (unsigned int i = 0; i < ARRAY_SIZE(FSK_RogerTable); i++) {
-        BK4819_WriteRegister(BK4819_REG_5F, FSK_RogerTable[i]);
-    }
+    BK4819_send_MDC1200(0x01, 0x00, 0x0088, 5);
 
     SYSTEM_DelayMs(20);
+}
 
-    // 4 sync bytes, 6 byte preamble, Enable FSK TX
-    BK4819_WriteRegister(BK4819_REG_59, 0x0868);
+void BK4819_send_MDC1200(const uint8_t op, const uint8_t arg, const uint16_t id, const uint8_t preamble_duration)
+{
+    uint8_t packet[42];
+    const unsigned int mdc_size = MDC1200_encode_single_packet(packet, op, arg, id);
 
-    SYSTEM_DelayMs(180);
+    BK4819_WriteRegister(BK4819_REG_58, 0x37C3);
+    BK4819_WriteRegister(BK4819_REG_72, scale_freq(1200));
+    BK4819_WriteRegister(BK4819_REG_70, 0x00E0);
 
-    // Stop FSK TX, reset Tone-2, disable FSK
+    if (mdc_size >= 7) {
+        const uint8_t *p8 = packet;
+        const uint16_t sync_ab = ((uint16_t)p8[2] << 8) | p8[3];
+        const uint16_t sync_cd = ((uint16_t)p8[4] << 8) | p8[5];
+        const uint16_t sync_e  = ((uint16_t)p8[6] << 8) | 0x0030;
+        BK4819_WriteRegister(BK4819_REG_5A, sync_ab);
+        BK4819_WriteRegister(BK4819_REG_5B, sync_cd);
+        BK4819_WriteRegister(BK4819_REG_5C, sync_e);
+    } else {
+        BK4819_WriteRegister(BK4819_REG_5A, 0x0000);
+        BK4819_WriteRegister(BK4819_REG_5B, 0x0000);
+        BK4819_WriteRegister(BK4819_REG_5C, 0x0030);
+    }
+
+    const uint8_t *payload = packet + 7;
+    const unsigned int payload_size = (mdc_size > 7) ? (mdc_size - 7) : 0;
+
+    if (payload_size > 0) {
+        BK4819_WriteRegister(BK4819_REG_5D, ((payload_size - 1) << 8));
+    } else {
+        BK4819_WriteRegister(BK4819_REG_5D, 0);
+    }
+
+    BK4819_WriteRegister(BK4819_REG_3F, BK4819_REG_3F_FSK_TX_FINISHED);
+    BK4819_WriteRegister(BK4819_REG_59, (1u << 15) | (1u << 14) | 0x0068);
     BK4819_WriteRegister(BK4819_REG_59, 0x0068);
-    BK4819_WriteRegister(BK4819_REG_70, 0x0000);
-    BK4819_WriteRegister(BK4819_REG_58, 0x0000);
+
+    {
+        unsigned int i;
+        const uint16_t *p16 = (const uint16_t *)payload;
+        for (i = 0; i < (payload_size / 2); i++)
+            BK4819_WriteRegister(BK4819_REG_5F, p16[i]);
+        if (payload_size & 1) {
+            const uint8_t last = payload[payload_size - 1];
+            BK4819_WriteRegister(BK4819_REG_5F, (uint16_t)last);
+        }
+    }
+
+    BK4819_WriteRegister(BK4819_REG_59, (1u << 11) | 0x0068);
+
+    {
+        unsigned int timeout = 500 / 4;
+        while (timeout-- > 0) {
+            SYSTEM_DelayMs(4);
+            if (BK4819_ReadRegister(BK4819_REG_02) & BK4819_REG_02_FSK_TX_FINISHED) {
+                BK4819_WriteRegister(BK4819_REG_02, 0);
+                timeout = 0;
+            }
+        }
+    }
+
+    BK4819_WriteRegister(BK4819_REG_59, 0x0068);
+    BK4819_WriteRegister(BK4819_REG_3F, 0);
+    BK4819_WriteRegister(BK4819_REG_70, 0);
+    BK4819_WriteRegister(BK4819_REG_58, 0);
 }
 
 void BK4819_PlayRoger(BK4819_FilterBandwidth_t Bandwidth)
