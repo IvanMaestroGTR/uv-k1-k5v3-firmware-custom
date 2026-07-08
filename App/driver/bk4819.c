@@ -36,6 +36,7 @@
 
 static const uint8_t DTMF_TONE1_GAIN = 65;
 static const uint8_t DTMF_TONE2_GAIN = 93;
+static const uint8_t MDC_FSK_TX_GAIN = 96;
 
 static uint16_t gBK4819_GpioOutState;
 
@@ -1778,9 +1779,9 @@ void BK4819_PlayRogerMDC(void)
     BK4819_EnterTxMute();
     BK4819_SetAF(BK4819_AF_MUTE);
 
-    SYSTEM_DelayMs(25);
+    SYSTEM_DelayMs(50);
 
-    BK4819_send_MDC1200(0x01, 0x00, 0x0088, 5);
+    BK4819_send_MDC1200(0x01, 0x00, 0x0088, 4);
 
     SYSTEM_DelayMs(20);
 }
@@ -1791,6 +1792,10 @@ void BK4819_send_MDC1200(const uint8_t op, const uint8_t arg, const uint16_t id,
     uint8_t packet[42];
     uint8_t combined_packet[256];
     unsigned int combined_size = 0;
+
+    BK4819_ResetFSK();
+    BK4819_WriteRegister(BK4819_REG_02, 0);
+    BK4819_WriteRegister(BK4819_REG_3F, 0);
 
     const unsigned int mdc_size = MDC1200_encode_single_packet(packet, op, arg, id);
 
@@ -1810,36 +1815,57 @@ void BK4819_send_MDC1200(const uint8_t op, const uint8_t arg, const uint16_t id,
     memcpy(combined_packet + combined_size, packet, mdc_size);
     combined_size += mdc_size;
 
-    BK4819_WriteRegister(BK4819_REG_58, 0x37C3);
+    BK4819_WriteRegister(BK4819_REG_58,
+        (1u << 13) |
+        (7u << 10) |
+        (0u << 8) |
+        (0u << 6) |
+        (0u << 4) |
+        (1u << 1) |
+        (1u << 0));
 
     BK4819_WriteRegister(BK4819_REG_72, scale_freq(1200));
-    BK4819_WriteRegister(BK4819_REG_70, 0x00E0);
+    BK4819_WriteRegister(BK4819_REG_70,
+        (0u << 15) |
+        (0u << 8) |
+        (1u << 7) |
+        (MDC_FSK_TX_GAIN << 0));
 
-    fsk_reg59 = 0x0068;
+    fsk_reg59 = (0u << 15) |
+                (0u << 14) |
+                (0u << 13) |
+                (0u << 12) |
+                (0u << 11) |
+                (0u << 10) |
+                (0u << 9) |
+                (0u << 8) |
+                (0u << 4) |
+                (1u << 3) |
+                (0u << 0);
 
     BK4819_WriteRegister(BK4819_REG_5A, 0x0000);
     BK4819_WriteRegister(BK4819_REG_5B, 0x0000);
     BK4819_WriteRegister(BK4819_REG_5C, 0x5625);
-    BK4819_WriteRegister(BK4819_REG_5D, ((combined_size - 1) << 8));
+    BK4819_WriteRegister(BK4819_REG_5D, ((combined_size - 1u) << 8));
 
-    BK4819_WriteRegister(BK4819_REG_59, 0x8068);
-    BK4819_WriteRegister(BK4819_REG_59, 0x0068);
+    BK4819_WriteRegister(BK4819_REG_59, (1u << 15) | (1u << 14) | fsk_reg59);
+    BK4819_WriteRegister(BK4819_REG_59, fsk_reg59);
 
     {
         unsigned int i;
         const uint16_t *p = (const uint16_t *)(combined_packet + 2);
         const uint8_t *p8 = combined_packet;
-        const unsigned int load_size = (combined_size > 2) ? (combined_size - 2) : 0;
+        unsigned int load_size = (combined_size > 2u) ? (combined_size - 2u) : 0u;
 
-        for (i = 0; i < (load_size / 2); i++)
+        for (i = 0; i < (load_size / 2u); i++)
             BK4819_WriteRegister(BK4819_REG_5F, p[i]);
 
-        if (load_size & 1)
-            BK4819_WriteRegister(BK4819_REG_5F, (uint16_t)p8[2 + load_size - 1]);
+        if (load_size & 1u)
+            BK4819_WriteRegister(BK4819_REG_5F, (uint16_t)p8[2u + load_size - 1u]);
     }
 
     BK4819_WriteRegister(BK4819_REG_3F, BK4819_REG_3F_FSK_TX_FINISHED);
-    BK4819_WriteRegister(BK4819_REG_59, 0x0868);
+    BK4819_WriteRegister(BK4819_REG_59, (1u << 11) | fsk_reg59);
 
     {
         unsigned int timeout = 500 / 4;
