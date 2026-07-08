@@ -1824,56 +1824,59 @@ void BK4819_PlayRogerMDC(void)
 // Send MDC1200 packet (ported from Test1)
 void BK4819_send_MDC1200(const uint8_t op, const uint8_t arg, const uint16_t id, const uint8_t preamble_duration)
 {
+    uint16_t fsk_reg59;
     uint8_t packet[42];
+    uint8_t combined_packet[256];
+    unsigned int combined_size = 0;
+
     const unsigned int mdc_size = MDC1200_encode_single_packet(packet, op, arg, id);
 
-    // Configure modem registers per the reference MDC1200 flow
-    BK4819_WriteRegister(0x58, 0x37C3);
-    BK4819_WriteRegister(0x72, scale_freq(1200));
-    BK4819_WriteRegister(0x70, 0x00E0);
-
-    if (mdc_size >= 7) {
-        const uint8_t *p8 = packet;
-        uint16_t sync_ab = ((uint16_t)p8[2] << 8) | p8[3];
-        uint16_t sync_cd = ((uint16_t)p8[4] << 8) | p8[5];
-        uint16_t sync_e  = ((uint16_t)p8[6] << 8) | 0x0030;
-        BK4819_WriteRegister(0x5A, sync_ab);
-        BK4819_WriteRegister(0x5B, sync_cd);
-        BK4819_WriteRegister(0x5C, sync_e);
-    } else {
-        BK4819_WriteRegister(0x5A, 0x0000);
-        BK4819_WriteRegister(0x5B, 0x0000);
-        BK4819_WriteRegister(0x5C, 0x0030);
-    }
-
-    const uint8_t *payload = packet + 7;
-    unsigned int payload_size = (mdc_size > 7) ? (mdc_size - 7) : 0;
-
-    if (payload_size > 0)
-        BK4819_WriteRegister(0x5D, ((payload_size - 1) << 8));
-    else
-        BK4819_WriteRegister(0x5D, 0);
-
-    BK4819_WriteRegister(0x3F, BK4819_REG_3F_FSK_TX_FINISHED);
-    BK4819_WriteRegister(0x59, (1u << 15) | (1u << 14) | 0x0068);
-    BK4819_WriteRegister(0x59, 0x0068);
-
-    BK4819_EnableTXLink();
-    SYSTEM_DelayMs(5);
-    BK4819_ExitTxMute();
-
     {
-        unsigned int i;
-        const uint16_t *p16 = (const uint16_t *)payload;
-        for (i = 0; i < (payload_size / 2); i++)
-            BK4819_WriteRegister(0x5F, p16[i]);
-        if (payload_size & 1) {
-            const uint8_t last = payload[payload_size - 1];
-            BK4819_WriteRegister(0x5F, (uint16_t)last);
+        unsigned int preamble_cycle;
+        for (preamble_cycle = 0; preamble_cycle < preamble_duration; preamble_cycle++) {
+            const unsigned int first_1800_size = (preamble_cycle == 0) ? 1u : 4u;
+
+            memset(combined_packet + combined_size, 0x00, first_1800_size);
+            combined_size += first_1800_size;
+
+            memset(combined_packet + combined_size, 0xFF, 3);
+            combined_size += 3;
         }
     }
 
-    BK4819_WriteRegister(0x59, (1u << 11) | 0x0068);
+    memcpy(combined_packet + combined_size, packet, mdc_size);
+    combined_size += mdc_size;
+
+    BK4819_WriteRegister(0x58, 0x37C3);
+
+    BK4819_WriteRegister(0x72, scale_freq(1200));
+    BK4819_WriteRegister(0x70, 0x00E0);
+
+    fsk_reg59 = 0x0068;
+
+    BK4819_WriteRegister(0x5A, 0x0000);
+    BK4819_WriteRegister(0x5B, 0x0000);
+    BK4819_WriteRegister(0x5C, 0x5625);
+    BK4819_WriteRegister(0x5D, ((combined_size - 1) << 8));
+
+    BK4819_WriteRegister(0x59, 0x8068);
+    BK4819_WriteRegister(0x59, 0x0068);
+
+    {
+        unsigned int i;
+        const uint16_t *p = (const uint16_t *)(combined_packet + 2);
+        const uint8_t *p8 = combined_packet;
+        const unsigned int load_size = (combined_size > 2) ? (combined_size - 2) : 0;
+
+        for (i = 0; i < (load_size / 2); i++)
+            BK4819_WriteRegister(0x5F, p[i]);
+
+        if (load_size & 1)
+            BK4819_WriteRegister(0x5F, (uint16_t)p8[2 + load_size - 1]);
+    }
+
+    BK4819_WriteRegister(0x3F, BK4819_REG_3F_FSK_TX_FINISHED);
+    BK4819_WriteRegister(0x59, 0x0868);
 
     {
         unsigned int timeout = 500 / 4;
@@ -1887,12 +1890,10 @@ void BK4819_send_MDC1200(const uint8_t op, const uint8_t arg, const uint16_t id,
         }
     }
 
-    BK4819_WriteRegister(0x59, 0x0068);
+    BK4819_WriteRegister(0x59, fsk_reg59);
     BK4819_WriteRegister(0x3F, 0);
     BK4819_WriteRegister(0x70, 0);
     BK4819_WriteRegister(0x58, 0);
-    BK4819_EnterTxMute();
-    BK4819_WriteRegister(0x30, 0xC1FE);
 }
 
 void BK4819_PlayRoger(BK4819_FilterBandwidth_t Bandwidth)
