@@ -179,6 +179,7 @@ void     BK4819_SendFSKData(uint16_t *pData, uint8_t words);
 void     BK4819_PrepareFSKReceive(void);
 
 void     BK4819_PlayRoger(BK4819_FilterBandwidth_t Bandwidth);
+void     BK4819_PlaySignalling(bool post_id);
 
 void     BK4819_Enable_AfDac_DiscMode_TxDsp(void);
 
