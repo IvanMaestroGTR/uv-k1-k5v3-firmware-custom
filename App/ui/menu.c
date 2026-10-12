@@ -19,6 +19,7 @@
 #include <stdlib.h>
 
 #include "../app/action.h"
+#include "../app/app.h"
 #include "../app/dtmf.h"
 #include "../app/menu.h"
 #include "../bitmaps.h"
@@ -112,6 +113,7 @@ const t_menu_item MenuList[] =
     {"MDC ID",      MENU_MDC_ID        },
     {"FSFleet",     MENU_FS_FLEET      },
     {"FS Unit",     MENU_FS_UNIT       },
+    {"RX ID",       MENU_RX_ID         },
     {"STE",         MENU_STE           },
     {"RP STE",      MENU_RP_STE        },
     {"1 Call",      MENU_1_CALL        },
@@ -632,7 +634,7 @@ static const uint8_t CatAudio[]   = {
     MENU_SET_AUD,
 #endif
 };
-static const uint8_t CatRadio[]   = { MENU_SQL, MENU_STE, MENU_RP_STE, MENU_ROGER, MENU_MDC_ID, MENU_FS_FLEET, MENU_FS_UNIT, MENU_VOX, MENU_TDR };
+static const uint8_t CatRadio[]   = { MENU_SQL, MENU_STE, MENU_RP_STE, MENU_ROGER, MENU_MDC_ID, MENU_FS_FLEET, MENU_FS_UNIT, MENU_RX_ID, MENU_VOX, MENU_TDR };
 static const uint8_t CatDtmf[]    = { MENU_UPCODE, MENU_DWCODE, MENU_D_ST, MENU_D_PRE, MENU_D_LIVE_DEC };
 static const uint8_t CatService[] = { MENU_F_LOCK, MENU_350EN, MENU_BATCAL, MENU_BATTYP, MENU_SET_NAV, MENU_RESET };
 
@@ -772,6 +774,13 @@ void UI_MENU_BuildView(void)
 }
 
 int32_t gSubMenuSelection;
+
+static void UI_MENU_FormatNumericEntry(char *String, uint8_t width)
+{
+    for (uint8_t i = 0; i < width; i++)
+        String[i] = (i < gInputBoxIndex) ? (char)('0' + gInputBox[i]) : '_';
+    String[width] = '\\0';
+}
 
 // edit box
 char    edit_original[17]; // a copy of the text before editing so that we can easily test for changes/difference
@@ -1469,6 +1478,36 @@ void UI_DisplayMenu(void)
         case MENU_ROGER:
             choiceTable = gSubMenu_ROGER;
             goto copy_menu_choice;
+
+        case MENU_MDC_ID:
+            if (gInputBoxIndex > 0)
+                UI_MENU_FormatNumericEntry(String, 5);
+            else
+                sprintf(String, "%05u", (unsigned)gSubMenuSelection);
+            break;
+
+        case MENU_FS_FLEET:
+            if (gInputBoxIndex > 0)
+                UI_MENU_FormatNumericEntry(String, 3);
+            else
+                sprintf(String, "%03u", (unsigned)gSubMenuSelection);
+            break;
+
+        case MENU_FS_UNIT:
+            if (gInputBoxIndex > 0)
+                UI_MENU_FormatNumericEntry(String, 4);
+            else
+                sprintf(String, "%04u", (unsigned)gSubMenuSelection);
+            break;
+
+        case MENU_RX_ID:
+            if (gSignallingLastProtocol == 1u)
+                sprintf(String, "MDC1200\\nID:%05u", (unsigned)gSignallingLastMDCID);
+            else if (gSignallingLastProtocol == 2u)
+                sprintf(String, "FLEETSYNC\\n%03u-%04u", (unsigned)gSignallingLastFleet, (unsigned)gSignallingLastUnit);
+            else
+                strcpy(String, "NO RX\\nID YET");
+            break;
 
         case MENU_VOL: {
             // SysInf is paginated. Pages appear in this order, only when their
