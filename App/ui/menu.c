@@ -1480,21 +1480,21 @@ void UI_DisplayMenu(void)
             goto copy_menu_choice;
 
         case MENU_MDC_ID:
-            if (gInputBoxIndex > 0)
+            if (gIsInSubMenu && gInputBoxIndex > 0)
                 UI_MENU_FormatNumericEntry(String, 5);
             else
                 sprintf(String, "%05u", (unsigned)gSubMenuSelection);
             break;
 
         case MENU_FS_FLEET:
-            if (gInputBoxIndex > 0)
+            if (gIsInSubMenu && gInputBoxIndex > 0)
                 UI_MENU_FormatNumericEntry(String, 3);
             else
                 sprintf(String, "%03u", (unsigned)gSubMenuSelection);
             break;
 
         case MENU_FS_UNIT:
-            if (gInputBoxIndex > 0)
+            if (gIsInSubMenu && gInputBoxIndex > 0)
                 UI_MENU_FormatNumericEntry(String, 4);
             else
                 sprintf(String, "%04u", (unsigned)gSubMenuSelection);
