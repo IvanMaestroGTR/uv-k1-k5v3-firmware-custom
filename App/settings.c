@@ -302,7 +302,19 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
 
     // 0EA8..0EAF
     PY25Q16_ReadBuffer(0x00A0A8 + 0x18, Data, 8);
-    gEeprom.ROGER                          = (Data[1] <  3) ? Data[1] : ROGER_MODE_OFF;
+    gEeprom.ROGER                          = (Data[1] <  7) ? Data[1] : ROGER_MODE_OFF;
+    /* Reserved bytes in this 0x50-byte settings block: +0x20..+0x25. */
+    PY25Q16_ReadBuffer(0x00A0A8 + 0x20, Data, 8);
+    gEeprom.MDC1200_ID = (Data[0] == 0xFF && Data[1] == 0xFF)
+                       ? 1u : (uint16_t)(Data[0] | ((uint16_t)Data[1] << 8));
+    gEeprom.FLEETSYNC_FLEET = (Data[2] == 0xFF && Data[3] == 0xFF)
+                            ? 100u : (uint16_t)(Data[2] | ((uint16_t)Data[3] << 8));
+    gEeprom.FLEETSYNC_UNIT = (Data[4] == 0xFF && Data[5] == 0xFF)
+                           ? 1000u : (uint16_t)(Data[4] | ((uint16_t)Data[5] << 8));
+    if (gEeprom.FLEETSYNC_FLEET < 100u || gEeprom.FLEETSYNC_FLEET > 349u)
+        gEeprom.FLEETSYNC_FLEET = 100u;
+    if (gEeprom.FLEETSYNC_UNIT < 1000u || gEeprom.FLEETSYNC_UNIT > 4999u)
+        gEeprom.FLEETSYNC_UNIT = 1000u;
     gEeprom.REPEATER_TAIL_TONE_ELIMINATION = (Data[2] < 11) ? Data[2] : 0;
     gEeprom.TX_VFO                         = (Data[3] <  2) ? Data[3] : 0;
     gEeprom.BATTERY_TYPE                   = (Data[4] < BATTERY_TYPE_UNKNOWN) ? Data[4] : BATTERY_TYPE_1600_MAH;
@@ -1073,6 +1085,15 @@ void SETTINGS_SaveSettings(void)
     State[2] = gEeprom.REPEATER_TAIL_TONE_ELIMINATION;
     State[3] = gEeprom.TX_VFO;
     State[4] = gEeprom.BATTERY_TYPE;
+
+    /* Preserve the neighbouring reserved bytes while storing signalling IDs. */
+    State = SecBuf + 0x20;
+    State[0] = (uint8_t)(gEeprom.MDC1200_ID & 0xFFu);
+    State[1] = (uint8_t)(gEeprom.MDC1200_ID >> 8);
+    State[2] = (uint8_t)(gEeprom.FLEETSYNC_FLEET & 0xFFu);
+    State[3] = (uint8_t)(gEeprom.FLEETSYNC_FLEET >> 8);
+    State[4] = (uint8_t)(gEeprom.FLEETSYNC_UNIT & 0xFFu);
+    State[5] = (uint8_t)(gEeprom.FLEETSYNC_UNIT >> 8);
 
     // 0x0ED0
     State = SecBuf + 0x40;
