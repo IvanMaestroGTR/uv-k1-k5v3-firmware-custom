@@ -774,6 +774,14 @@ void UI_MENU_BuildView(void)
 
 int32_t gSubMenuSelection;
 
+static void UI_MENU_FormatHex16(char *String, uint16_t value)
+{
+    static const char hexDigits[] = "0123456789ABCDEF";
+    for (unsigned int i = 0; i < 4; i++)
+        String[i] = hexDigits[(value >> ((3u - i) * 4u)) & 0x0Fu];
+    String[4] = '\0';
+}
+
 // edit box
 char    edit_original[17]; // a copy of the text before editing so that we can easily test for changes/difference
 char    edit[17];
@@ -1478,7 +1486,7 @@ void UI_DisplayMenu(void)
                     UI_PrintStringSmall("^", menu_item_x1 + (((menu_item_x2 - menu_item_x1) - 28 + 1) / 2) + (7 * edit_index), 0, 4);
                 already_printed = true;
             } else {
-                sprintf(String, "%04X", (unsigned)gEeprom.MDC1200_ID);
+                UI_MENU_FormatHex16(String, gEeprom.MDC1200_ID);
                 edit_index = -1;
             }
             break;
@@ -1508,7 +1516,8 @@ void UI_DisplayMenu(void)
 
         case MENU_RX_ID:
             if (gSignallingLastProtocol == 1u)
-                sprintf(String, "MDC1200\nID:%04X", (unsigned)gSignallingLastMDCID);
+                strcpy(String, "MDC1200\\nID:");
+                UI_MENU_FormatHex16(String + 11, gSignallingLastMDCID);
             else if (gSignallingLastProtocol == 2u)
                 sprintf(String, "FLEETSYNC\n%03u-%04u", (unsigned)gSignallingLastFleet, (unsigned)gSignallingLastUnit);
             else
