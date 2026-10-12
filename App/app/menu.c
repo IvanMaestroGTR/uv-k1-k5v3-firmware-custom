@@ -1597,22 +1597,23 @@ static void MENU_Key_0_to_9(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
     if (m == MENU_MDC_ID || m == MENU_FS_FLEET || m == MENU_FS_UNIT)
     {
         const uint8_t digits = (m == MENU_MDC_ID) ? 5u : (m == MENU_FS_FLEET) ? 3u : 4u;
+        uint32_t enteredValue = 0;
         if (gInputBoxIndex < digits)
             return;
 
         for (uint8_t i = 0; i < digits; i++)
-            Value = (Value * 10) + (uint16_t)gInputBox[i];
+            enteredValue = (enteredValue * 10u) + (uint32_t)gInputBox[i];
         gInputBoxIndex = 0;
 
         Min = (m == MENU_MDC_ID) ? 0 : (m == MENU_FS_FLEET) ? 100 : 1000;
         Max = (m == MENU_MDC_ID) ? 65535 : (m == MENU_FS_FLEET) ? 349 : 4999;
-        if (Value < Min || Value > Max)
+        if (enteredValue < (uint32_t)Min || enteredValue > (uint32_t)Max)
         {
             gBeepToPlay = BEEP_500HZ_60MS_DOUBLE_BEEP_OPTIONAL;
             return;
         }
 
-        gSubMenuSelection = Value;
+        gSubMenuSelection = (int32_t)enteredValue;
         return;
     }
 
