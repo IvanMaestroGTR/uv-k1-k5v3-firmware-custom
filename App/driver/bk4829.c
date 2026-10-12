@@ -34,7 +34,6 @@
 #define PIN_SCL GPIO_MAKE_PIN(GPIOB, LL_GPIO_PIN_8)
 #define PIN_SDA GPIO_MAKE_PIN(GPIOB, LL_GPIO_PIN_9)
 
-static const uint16_t FSK_RogerTable[7] = {0xF1A2, 0x7446, 0x61A4, 0x6544, 0x4E8A, 0xE044, 0xEA84};
 
 //static const uint8_t DTMF_TONE1_GAIN = 65;
 //static const uint8_t DTMF_TONE2_GAIN = 93;
@@ -1862,98 +1861,6 @@ void BK4819_PrepareFSKReceive(void)
     // FSK Preamble Length 7 bytes
     // FSK SyncLength Selection
     BK4819_WriteRegister(BK4819_REG_59, 0x3068);
-}
-
-static void BK4819_PlayRogerNormal(BK4819_FilterBandwidth_t Bandwidth)
-{
-    #if 0
-        const uint32_t tone1_Hz = 500;
-        const uint32_t tone2_Hz = 700;
-    #else
-        // motorola type
-        const uint32_t tone1_Hz = 1540;
-        const uint32_t tone2_Hz = 1310;
-    #endif
-
-
-    BK4819_EnterTxMute();
-    BK4819_SetAF(BK4819_AF_MUTE);
-
-    const uint8_t rogerToneGain = (Bandwidth == BK4819_FILTER_BW_WIDE) ? 32u : 67u;
-
-    if (Bandwidth == BK4819_FILTER_BW_WIDE)
-        BK4819_SetFilterBandwidth(BK4819_FILTER_BW_NARROW, true);
-
-    BK4819_WriteRegister(BK4819_REG_71, scale_freq(tone1_Hz));
-
-    BK4819_EnableTXLink();
-    SYSTEM_DelayMs(50);
-
-    BK4819_WriteRegister(BK4819_REG_70,
-        BK4819_REG_70_ENABLE_TONE1 |
-        (rogerToneGain << BK4819_REG_70_SHIFT_TONE1_TUNING_GAIN));
-
-    BK4819_ExitTxMute();
-    SYSTEM_DelayMs(80);
-    BK4819_EnterTxMute();
-
-    BK4819_PlayToneRaw(tone2_Hz, 80);
-
-    BK4819_WriteRegister(BK4819_REG_70, 0x0000);
-
-    if (Bandwidth == BK4819_FILTER_BW_WIDE)
-        BK4819_SetFilterBandwidth(Bandwidth, true);
-
-    BK4819_WriteRegister(BK4819_REG_30, 0xC1FE);   // 1 1 0000 0 1 1111 1 1 1 0
-}
-
-
-void BK4819_PlayRogerMDC(void)
-{
-    struct reg_value {
-        BK4819_REGISTER_t reg;
-        uint16_t value;
-    };
-
-    struct reg_value RogerMDC_Configuration [] = {
-        { BK4819_REG_58, 0x37C3 },  // FSK Enable,
-                                        // RX Bandwidth FFSK 1200/1800
-                                        // 0xAA or 0x55 Preamble
-                                        // 11 RX Gain,
-                                        // 101 RX Mode
-                                        // TX FFSK 1200/1800
-        { BK4819_REG_72, 0x3065 },  // Set Tone-2 to 1200Hz
-        { BK4819_REG_70, 0x00C3 },  // Enable Tone-2 and Set Tone2 Gain
-        { BK4819_REG_5D, 0x0D00 },  // Set FSK data length to 13 bytes
-        { BK4819_REG_59, 0x8068 },  // 4 byte sync length, 6 byte preamble, clear TX FIFO
-        { BK4819_REG_59, 0x0068 },  // Same, but clear TX FIFO is now unset (clearing done)
-        { BK4819_REG_5A, 0x5555 },  // First two sync bytes
-        { BK4819_REG_5B, 0x5555 },  // End of sync bytes. Total 4 bytes: 555555aa
-        { BK4819_REG_5C, 0xAA30 },  // Disable CRC
-    };
-
-    BK4819_SetAF(BK4819_AF_MUTE);
-
-    for (unsigned int i = 0; i < ARRAY_SIZE(RogerMDC_Configuration); i++) {
-        BK4819_WriteRegister(RogerMDC_Configuration[i].reg, RogerMDC_Configuration[i].value);
-    }
-
-    // Send the data from the roger table
-    for (unsigned int i = 0; i < ARRAY_SIZE(FSK_RogerTable); i++) {
-        BK4819_WriteRegister(BK4819_REG_5F, FSK_RogerTable[i]);
-    }
-
-    SYSTEM_DelayMs(20);
-
-    // 4 sync bytes, 6 byte preamble, Enable FSK TX
-    BK4819_WriteRegister(BK4819_REG_59, 0x0868);
-
-    SYSTEM_DelayMs(180);
-
-    // Stop FSK TX, reset Tone-2, disable FSK
-    BK4819_WriteRegister(BK4819_REG_59, 0x0068);
-    BK4819_WriteRegister(BK4819_REG_70, 0x0000);
-    BK4819_WriteRegister(BK4819_REG_58, 0x0000);
 }
 
 /*
