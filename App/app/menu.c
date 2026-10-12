@@ -313,8 +313,13 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
         #endif
 
         case MENU_ROGER:
-            //*pMin = 0;
             *pMax = ARRAY_SIZE(gSubMenu_ROGER) - 1;
+            break;
+
+        case MENU_MDC_ID:
+        case MENU_FS_FLEET:
+        case MENU_FS_UNIT:
+            *pMax = 65535;
             break;
 
         case MENU_PONMSG:
@@ -836,6 +841,18 @@ void MENU_AcceptSetting(void)
             gEeprom.ROGER = gSubMenuSelection;
             break;
 
+        case MENU_MDC_ID:
+            gEeprom.MDC1200_ID = gSubMenuSelection;
+            break;
+
+        case MENU_FS_FLEET:
+            gEeprom.FLEETSYNC_FLEET = gSubMenuSelection;
+            break;
+
+        case MENU_FS_UNIT:
+            gEeprom.FLEETSYNC_UNIT = gSubMenuSelection;
+            break;
+
         case MENU_AM:
             gTxVfo->Modulation     = gSubMenuSelection;
             gRequestSaveChannel = 1;
@@ -1235,6 +1252,18 @@ void MENU_ShowCurrentSetting(void)
 
         case MENU_ROGER:
             gSubMenuSelection = gEeprom.ROGER;
+            break;
+
+        case MENU_MDC_ID:
+            gSubMenuSelection = gEeprom.MDC1200_ID;
+            break;
+
+        case MENU_FS_FLEET:
+            gSubMenuSelection = gEeprom.FLEETSYNC_FLEET;
+            break;
+
+        case MENU_FS_UNIT:
+            gSubMenuSelection = gEeprom.FLEETSYNC_UNIT;
             break;
 
         case MENU_AM:
