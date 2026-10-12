@@ -1200,6 +1200,7 @@ static void CheckRadioInterrupts(void)
                             gSignallingLastProtocol = 2u;
                             gSignallingLastFleet = fleet;
                             gSignallingLastUnit = unit;
+                            gUpdateDisplay = true;
                         }
                     } else {
                         /* Hardware sync detector strips the sync bytes from the FIFO;
@@ -1215,6 +1216,7 @@ static void CheckRadioInterrupts(void)
                             gSignallingLastOpcode = op;
                             gSignallingLastArgument = arg;
                             gSignallingLastMDCID = id;
+                            gUpdateDisplay = true;
                         }
                     }
                     gSignallingRxActive = false;
