@@ -317,9 +317,17 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
             break;
 
         case MENU_MDC_ID:
-        case MENU_FS_FLEET:
-        case MENU_FS_UNIT:
             *pMax = 65535;
+            break;
+
+        case MENU_FS_FLEET:
+            *pMin = 100;
+            *pMax = 349;
+            break;
+
+        case MENU_FS_UNIT:
+            *pMin = 1000;
+            *pMax = 4999;
             break;
 
         case MENU_PONMSG:
