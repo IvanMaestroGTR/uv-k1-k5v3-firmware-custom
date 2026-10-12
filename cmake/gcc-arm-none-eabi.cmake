@@ -43,5 +43,7 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--print-memory-usage")
 set(TOOLCHAIN_LINK_LIBRARIES "m")
 
 # Suppress harmless "RWX segment" warning
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --specs=nosys.specs")
+
 set(CMAKE_EXE_LINKER_FLAGS_INIT
     "--specs=nosys.specs -Wl,--gc-sections -Wl,--no-warn-rwx-segment")
