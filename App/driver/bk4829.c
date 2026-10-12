@@ -1838,7 +1838,6 @@ void BK4819_PrepareSignallingReceive(void)
     BK4819_WriteRegister(BK4819_REG_5B, fleetsync ? 0x23EBu : 0x99A7u);
     BK4819_WriteRegister(BK4819_REG_5C, 0x5625u);
     BK4819_WriteRegister(BK4819_REG_5D, fleetsync ? 0x0700u : 0x0D00u);
-    BK4819_WriteRegister(BK4819_REG_5E, 0x0021u); /* FIFO threshold: 4 words */
     BK4819_WriteRegister(BK4819_REG_59, 0xC008u); /* clear TX/RX FIFO */
     BK4819_WriteRegister(BK4819_REG_59, rx_cfg);
 }
