@@ -1117,6 +1117,17 @@ void SETTINGS_SaveSettings(void)
 
     PY25Q16_WriteBuffer(0x00A0A8, SecBuf, 0x50, false);
 
+    /* Store signalling IDs separately from boot-message and DTMF storage. */
+    PY25Q16_ReadBuffer(SETTINGS_SIGNALLING_CONFIG_ADDR, SignallingData, sizeof(SignallingData));
+    SignallingData[0] = (uint8_t)(gEeprom.MDC1200_ID & 0xFFu);
+    SignallingData[1] = (uint8_t)(gEeprom.MDC1200_ID >> 8);
+    SignallingData[2] = (uint8_t)(gEeprom.FLEETSYNC_FLEET & 0xFFu);
+    SignallingData[3] = (uint8_t)(gEeprom.FLEETSYNC_FLEET >> 8);
+    SignallingData[4] = (uint8_t)(gEeprom.FLEETSYNC_UNIT & 0xFFu);
+    SignallingData[5] = (uint8_t)(gEeprom.FLEETSYNC_UNIT >> 8);
+    SignallingData[6] = 0xA7u;
+    PY25Q16_WriteBuffer(SETTINGS_SIGNALLING_CONFIG_ADDR, SignallingData, sizeof(SignallingData), false);
+
     // -------------------------
     // 0f18 - 0f20
 
