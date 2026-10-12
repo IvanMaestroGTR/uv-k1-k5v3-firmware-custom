@@ -212,7 +212,8 @@
                 "ENABLE_FEAT_F4HWN_GAME": true,
                 "ENABLE_FEAT_F4HWN_OVERLAY_APPS": false,
                 "EDITION_STRING": "Max",
-                "TARGET": "f4hwn.max"
+                "TARGET": "f4hwn.max",
+                "ENABLE_LTO": true
             }
         }
     ],
