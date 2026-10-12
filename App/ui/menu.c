@@ -779,7 +779,7 @@ static void UI_MENU_FormatNumericEntry(char *String, uint8_t width)
 {
     for (uint8_t i = 0; i < width; i++)
         String[i] = (i < gInputBoxIndex) ? (char)('0' + gInputBox[i]) : '_';
-    String[width] = '\\0';
+    String[width] = '\0';
 }
 
 // edit box
@@ -1502,11 +1502,11 @@ void UI_DisplayMenu(void)
 
         case MENU_RX_ID:
             if (gSignallingLastProtocol == 1u)
-                sprintf(String, "MDC1200\\nID:%05u", (unsigned)gSignallingLastMDCID);
+                sprintf(String, "MDC1200\nID:%05u", (unsigned)gSignallingLastMDCID);
             else if (gSignallingLastProtocol == 2u)
-                sprintf(String, "FLEETSYNC\\n%03u-%04u", (unsigned)gSignallingLastFleet, (unsigned)gSignallingLastUnit);
+                sprintf(String, "FLEETSYNC\n%03u-%04u", (unsigned)gSignallingLastFleet, (unsigned)gSignallingLastUnit);
             else
-                strcpy(String, "NO RX\\nID YET");
+                strcpy(String, "NO RX\nID YET");
             break;
 
         case MENU_VOL: {
