@@ -1481,9 +1481,9 @@ void UI_DisplayMenu(void)
 
         case MENU_MDC_ID:
             if (gIsInSubMenu && edit_index >= 0) {
-                UI_PrintStringSmall(edit, menu_item_x1, menu_item_x2, 3);
+                UI_PrintStringSmallNormal(edit, menu_item_x1, menu_item_x2, 3);
                 if (edit_index < 4)
-                    UI_PrintStringSmall("^", menu_item_x1 + (((menu_item_x2 - menu_item_x1) - 28 + 1) / 2) + (7 * edit_index), 0, 4);
+                    UI_PrintStringSmallNormal("^", menu_item_x1 + (((menu_item_x2 - menu_item_x1) - 28 + 1) / 2) + (7 * edit_index), 0, 4);
                 already_printed = true;
             } else {
                 UI_MENU_FormatHex16(String, gEeprom.MDC1200_ID);
@@ -1495,19 +1495,19 @@ void UI_DisplayMenu(void)
             if (gIsInSubMenu && edit_index >= 0) {
                 char separator = edit[3];
                 edit[3] = '\0';
-                UI_PrintStringSmall(edit, menu_item_x1, 0, 2);
+                UI_PrintStringSmallNormal(edit, menu_item_x1, 0, 2);
                 edit[3] = separator;
-                UI_PrintStringSmall(edit + 4, menu_item_x1, 0, 4);
+                UI_PrintStringSmallNormal(edit + 4, menu_item_x1, 0, 4);
                 if (edit_index < 8 && edit_index != 3) {
                     const uint8_t line = edit_index < 3 ? 2 : 4;
                     const uint8_t column = edit_index < 3 ? edit_index : edit_index - 4;
-                    UI_PrintStringSmall("^", menu_item_x1 + (7 * column), 0, line + 1);
+                    UI_PrintStringSmallNormal("^", menu_item_x1 + (7 * column), 0, line + 1);
                 }
             } else {
                 sprintf(String, "%03u", (unsigned)gEeprom.FLEETSYNC_FLEET);
-                UI_PrintStringSmall(String, menu_item_x1, 0, 2);
+                UI_PrintStringSmallNormal(String, menu_item_x1, 0, 2);
                 sprintf(String, "%04u", (unsigned)gEeprom.FLEETSYNC_UNIT);
-                UI_PrintStringSmall(String, menu_item_x1, 0, 4);
+                UI_PrintStringSmallNormal(String, menu_item_x1, 0, 4);
                 edit_index = -1;
                 sprintf(edit, "%03u\n%04u", (unsigned)gEeprom.FLEETSYNC_FLEET, (unsigned)gEeprom.FLEETSYNC_UNIT);
             }
