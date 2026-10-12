@@ -23,6 +23,8 @@ target_sources(App INTERFACE
     app/chFrScanner.c
     app/common.c
     app/dtmf.c
+    app/mdc1200.c
+    app/fleetsync.c
     app/generic.c
     app/main.c
     app/menu.c
