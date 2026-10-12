@@ -774,13 +774,6 @@ void UI_MENU_BuildView(void)
 
 int32_t gSubMenuSelection;
 
-static void UI_MENU_FormatNumericEntry(char *String, uint8_t width)
-{
-    for (uint8_t i = 0; i < width; i++)
-        String[i] = (i < gInputBoxIndex) ? (char)('0' + gInputBox[i]) : '_';
-    String[width] = '\0';
-}
-
 // edit box
 char    edit_original[17]; // a copy of the text before editing so that we can easily test for changes/difference
 char    edit[17];
