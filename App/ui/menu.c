@@ -111,7 +111,6 @@ const t_menu_item MenuList[] =
 #endif
     {"Signal",      MENU_ROGER         },
     {"MDC ID",      MENU_MDC_ID        },
-    {"FS ID",       MENU_FS_FLEET      },
     {"RX ID",       MENU_RX_ID         },
     {"STE",         MENU_STE           },
     {"RP STE",      MENU_RP_STE        },
@@ -317,10 +316,7 @@ const char* const gSubMenu_ROGER[] =
     "OFF",
     "PRE MDC",
     "POST MDC",
-    "BOTH MDC",
-    "PRE FLEET",
-    "POST FLEET",
-    "BOTH FLEET"
+    "BOTH MDC"
 };
 
 const char* const gSubMenu_RESET[] =
@@ -633,7 +629,7 @@ static const uint8_t CatAudio[]   = {
     MENU_SET_AUD,
 #endif
 };
-static const uint8_t CatRadio[]   = { MENU_SQL, MENU_STE, MENU_RP_STE, MENU_ROGER, MENU_MDC_ID, MENU_FS_FLEET, MENU_RX_ID, MENU_VOX, MENU_TDR };
+static const uint8_t CatRadio[]   = { MENU_SQL, MENU_STE, MENU_RP_STE, MENU_ROGER, MENU_MDC_ID, MENU_RX_ID, MENU_VOX, MENU_TDR };
 static const uint8_t CatDtmf[]    = { MENU_UPCODE, MENU_DWCODE, MENU_D_ST, MENU_D_PRE, MENU_D_LIVE_DEC };
 static const uint8_t CatService[] = { MENU_F_LOCK, MENU_350EN, MENU_BATCAL, MENU_BATTYP, MENU_SET_NAV, MENU_RESET };
 
@@ -1491,36 +1487,11 @@ void UI_DisplayMenu(void)
             }
             break;
 
-        case MENU_FS_FLEET:
-            if (gIsInSubMenu && edit_index >= 0) {
-                char separator = edit[3];
-                edit[3] = '\0';
-                UI_PrintStringSmallNormal(edit, menu_item_x1, 0, 2);
-                edit[3] = separator;
-                UI_PrintStringSmallNormal(edit + 4, menu_item_x1, 0, 4);
-                if (edit_index < 8 && edit_index != 3) {
-                    const uint8_t line = edit_index < 3 ? 2 : 4;
-                    const uint8_t column = edit_index < 3 ? edit_index : edit_index - 4;
-                    UI_PrintStringSmallNormal("^", menu_item_x1 + (7 * column), 0, line + 1);
-                }
-            } else {
-                sprintf(String, "%03u", (unsigned)gEeprom.FLEETSYNC_FLEET);
-                UI_PrintStringSmallNormal(String, menu_item_x1, 0, 2);
-                sprintf(String, "%04u", (unsigned)gEeprom.FLEETSYNC_UNIT);
-                UI_PrintStringSmallNormal(String, menu_item_x1, 0, 4);
-                edit_index = -1;
-                sprintf(edit, "%03u\n%04u", (unsigned)gEeprom.FLEETSYNC_FLEET, (unsigned)gEeprom.FLEETSYNC_UNIT);
-            }
-            already_printed = true;
-            break;
-
         case MENU_RX_ID:
             if (gSignallingLastProtocol == 1u) {
                 strcpy(String, "MDC1200\nID:");
                 UI_MENU_FormatHex16(String + 11, gSignallingLastMDCID);
-            } else if (gSignallingLastProtocol == 2u)
-                sprintf(String, "FLEETSYNC\n%03u-%04u", (unsigned)gSignallingLastFleet, (unsigned)gSignallingLastUnit);
-            else
+                        else
                 strcpy(String, "NO RX\nID YET");
             break;
 
