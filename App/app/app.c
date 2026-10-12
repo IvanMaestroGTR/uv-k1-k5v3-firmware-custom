@@ -29,6 +29,8 @@
 #include "app/app.h"
 #include "app/chFrScanner.h"
 #include "app/dtmf.h"
+#include "app/mdc1200.h"
+#include "app/fleetsync.h"
 #ifdef ENABLE_FLASHLIGHT
     #include "app/flashlight.h"
 #endif
@@ -64,6 +66,18 @@
 #include "dtmf.h"
 #include "external/printf/printf.h"
 #include "frequencies.h"
+
+volatile uint8_t  gSignallingLastProtocol;
+volatile uint8_t  gSignallingLastOpcode;
+volatile uint8_t  gSignallingLastArgument;
+volatile uint16_t gSignallingLastMDCID;
+volatile uint16_t gSignallingLastFleet;
+volatile uint16_t gSignallingLastUnit;
+
+static bool     gSignallingRxActive;
+static uint8_t  gSignallingRxBuffer[14];
+static unsigned int gSignallingRxBytes;
+static unsigned int gSignallingRxExpectedBytes;
 #include "functions.h"
 #include "helper/battery.h"
 #include "misc.h"
@@ -1154,6 +1168,61 @@ static void CheckRadioInterrupts(void)
         } interrupts;
 
         interrupts.__raw = BK4819_ReadRegister(BK4819_REG_02);
+
+        if (gEeprom.ROGER != ROGER_MODE_OFF && gCurrentFunction != FUNCTION_TRANSMIT) {
+            if (interrupts.fskRxSync) {
+                gSignallingRxActive = true;
+                gSignallingRxBytes = 0;
+                gSignallingRxExpectedBytes =
+                    (gEeprom.ROGER >= ROGER_MODE_FLEETSYNC_PRE) ? 8u : 14u;
+            }
+
+            if (gSignallingRxActive &&
+                (interrupts.fskFifoAlmostFull || interrupts.fskRxFinied)) {
+                const unsigned int expectedWords = (gSignallingRxExpectedBytes + 1u) / 2u;
+                unsigned int wordsToRead = interrupts.fskRxFinied
+                    ? (gSignallingRxBytes < gSignallingRxExpectedBytes
+                        ? (gSignallingRxExpectedBytes - gSignallingRxBytes + 1u) / 2u : 0u)
+                    : 4u;
+
+                while (wordsToRead-- > 0u && gSignallingRxBytes < gSignallingRxExpectedBytes) {
+                    const uint16_t word = BK4819_ReadRegister(BK4819_REG_5F);
+                    gSignallingRxBuffer[gSignallingRxBytes++] = (uint8_t)(word & 0xFFu);
+                    if (gSignallingRxBytes < gSignallingRxExpectedBytes)
+                        gSignallingRxBuffer[gSignallingRxBytes++] = (uint8_t)(word >> 8);
+                }
+
+                if (interrupts.fskRxFinied) {
+                    if (gEeprom.ROGER >= ROGER_MODE_FLEETSYNC_PRE) {
+                        uint8_t packet[FLEETSYNC_PACKET_SIZE] = {0xAA, 0xAA, 0x23, 0xEB};
+                        uint16_t fleet = 0, unit = 0;
+                        memcpy(packet + 4, gSignallingRxBuffer, 8u);
+                        if (FleetSync_decode_ani(packet, &fleet, &unit)) {
+                            gSignallingLastProtocol = 2u;
+                            gSignallingLastFleet = fleet;
+                            gSignallingLastUnit = unit;
+                        }
+                    } else {
+                        /* Hardware sync detector strips the sync bytes from the FIFO;
+                           restore the known MDC sync sequence for the software decoder. */
+                        uint8_t packet[19] = {0xFB, 0x72, 0x40, 0x99, 0xA7};
+                        uint8_t op = 0, arg = 0;
+                        uint16_t id = 0;
+                        memcpy(packet + 5, gSignallingRxBuffer, gSignallingRxExpectedBytes);
+                        MDC1200_reset_rx();
+                        if (MDC1200_process_rx_data(packet, 5u + gSignallingRxExpectedBytes,
+                                                    &op, &arg, &id)) {
+                            gSignallingLastProtocol = 1u;
+                            gSignallingLastOpcode = op;
+                            gSignallingLastArgument = arg;
+                            gSignallingLastMDCID = id;
+                        }
+                    }
+                    gSignallingRxActive = false;
+                    gSignallingRxBytes = 0;
+                }
+            }
+        }
 
         // 0 = no phase shift
         // 1 = 120deg phase shift
