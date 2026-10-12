@@ -321,16 +321,6 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
             *pMax = 65535;
             break;
 
-        case MENU_FS_FLEET:
-            *pMin = 100;
-            *pMax = 349;
-            break;
-
-        case MENU_FS_UNIT:
-            *pMin = 1000;
-            *pMax = 4999;
-            break;
-
         case MENU_PONMSG:
             //*pMin = 0;
             *pMax = ARRAY_SIZE(gSubMenu_PONMSG) - 1;
@@ -863,20 +853,6 @@ void MENU_AcceptSetting(void)
             break;
         }
 
-        case MENU_FS_FLEET:
-            gEeprom.FLEETSYNC_FLEET = (uint16_t)((edit[0] - '0') * 100u +
-                                                 (edit[1] - '0') * 10u +
-                                                 (edit[2] - '0'));
-            gEeprom.FLEETSYNC_UNIT = (uint16_t)((edit[4] - '0') * 1000u +
-                                                (edit[5] - '0') * 100u +
-                                                (edit[6] - '0') * 10u +
-                                                (edit[7] - '0'));
-            if (gEeprom.FLEETSYNC_FLEET < 100u) gEeprom.FLEETSYNC_FLEET = 100u;
-            else if (gEeprom.FLEETSYNC_FLEET > 349u) gEeprom.FLEETSYNC_FLEET = 349u;
-            if (gEeprom.FLEETSYNC_UNIT < 1000u) gEeprom.FLEETSYNC_UNIT = 1000u;
-            else if (gEeprom.FLEETSYNC_UNIT > 4999u) gEeprom.FLEETSYNC_UNIT = 4999u;
-            break;
-
         case MENU_RX_ID:
             return; // Read-only: the display is populated by the RX decoder.
 
@@ -1285,14 +1261,6 @@ void MENU_ShowCurrentSetting(void)
             gSubMenuSelection = gEeprom.MDC1200_ID;
             break;
 
-        case MENU_FS_FLEET:
-            gSubMenuSelection = gEeprom.FLEETSYNC_FLEET;
-            break;
-
-        case MENU_FS_UNIT:
-            gSubMenuSelection = gEeprom.FLEETSYNC_UNIT;
-            break;
-
         case MENU_RX_ID:
             gSubMenuSelection = 0;
             break;
@@ -1632,25 +1600,21 @@ static void MENU_Key_0_to_9(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 
     const int m = UI_MENU_GetCurrentMenuId();
 
-    if (m == MENU_MDC_ID || m == MENU_FS_FLEET || m == MENU_FS_UNIT)
+    if (m == MENU_MDC_ID)
     {
-        const uint8_t digits = (m == MENU_MDC_ID) ? 5u : (m == MENU_FS_FLEET) ? 3u : 4u;
+        const uint8_t digits = 4u;
         uint32_t enteredValue = 0;
-        if (gInputBoxIndex < digits)
-            return;
-
-        for (uint8_t i = 0; i < digits; i++)
-            enteredValue = (enteredValue * 10u) + (uint32_t)gInputBox[i];
-        gInputBoxIndex = 0;
-
-        Min = (m == MENU_MDC_ID) ? 0 : (m == MENU_FS_FLEET) ? 100 : 1000;
-        Max = (m == MENU_MDC_ID) ? 65535 : (m == MENU_FS_FLEET) ? 349 : 4999;
-        if (enteredValue < (uint32_t)Min || enteredValue > (uint32_t)Max)
-        {
-            gBeepToPlay = BEEP_500HZ_60MS_DOUBLE_BEEP_OPTIONAL;
-            return;
+        if (gInputBoxIndex < digits) return;
+        for (uint8_t i = 0; i < digits; i++) {
+            const char c = gInputBox[i];
+            uint8_t nibble;
+            if (c >= '0' && c <= '9') nibble = (uint8_t)(c - '0');
+            else if (c >= 'A' && c <= 'F') nibble = (uint8_t)(c - 'A' + 10);
+            else if (c >= 'a' && c <= 'f') nibble = (uint8_t)(c - 'a' + 10);
+            else { gInputBoxIndex = 0; gBeepToPlay = BEEP_500HZ_60MS_DOUBLE_BEEP_OPTIONAL; return; }
+            enteredValue = (enteredValue << 4) | nibble;
         }
-
+        gInputBoxIndex = 0;
         gSubMenuSelection = (int32_t)enteredValue;
         return;
     }
