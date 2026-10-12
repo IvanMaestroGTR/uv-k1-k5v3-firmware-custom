@@ -1515,10 +1515,10 @@ void UI_DisplayMenu(void)
             break;
 
         case MENU_RX_ID:
-            if (gSignallingLastProtocol == 1u)
+            if (gSignallingLastProtocol == 1u) {
                 strcpy(String, "MDC1200\\nID:");
                 UI_MENU_FormatHex16(String + 11, gSignallingLastMDCID);
-            else if (gSignallingLastProtocol == 2u)
+            } else if (gSignallingLastProtocol == 2u)
                 sprintf(String, "FLEETSYNC\n%03u-%04u", (unsigned)gSignallingLastFleet, (unsigned)gSignallingLastUnit);
             else
                 strcpy(String, "NO RX\nID YET");
