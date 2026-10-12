@@ -1,0 +1,49 @@
+name: TrueMDC port build
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'App/**'
+      - 'Core/**'
+      - 'Drivers/**'
+      - 'Middlewares/**'
+      - 'CMakeLists.txt'
+      - 'CMakePresets.json'
+      - 'Dockerfile'
+      - 'compile-firmware.sh'
+      - '.github/workflows/truemdc-port-build.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: truemdc-port-build-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  firmware-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out pull request
+        uses: actions/checkout@v4
+
+      - name: Build firmware toolchain container
+        run: docker build --tag uvk1-uvk5v3 .
+
+      - name: Build Fusion firmware
+        run: ./compile-firmware.sh Fusion
+
+      - name: Upload firmware outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: truemdc-port-build-output
+          path: |
+            build/Fusion/*.elf
+            build/Fusion/*.bin
+            build/Fusion/*.hex
+            build/Fusion/*.map
+          if-no-files-found: warn
+          retention-days: 7
