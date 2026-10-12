@@ -108,7 +108,10 @@ const t_menu_item MenuList[] =
 #ifdef ENABLE_VOICE
     {"Voice",       MENU_VOICE         },
 #endif
-    {"Roger",       MENU_ROGER         },
+    {"Signalling",  MENU_ROGER         },
+    {"MDC ID",      MENU_MDC_ID        },
+    {"FS Fleet",    MENU_FS_FLEET      },
+    {"FS Unit",     MENU_FS_UNIT       },
     {"STE",         MENU_STE           },
     {"RP STE",      MENU_RP_STE        },
     {"1 Call",      MENU_1_CALL        },
@@ -311,8 +314,12 @@ const char* const gSubMenu_SET_SAV[] =
 const char* const gSubMenu_ROGER[] =
 {
     "OFF",
-    "ROGER",
-    "MDC"
+    "PRE MDC",
+    "POST MDC",
+    "BOTH MDC",
+    "PRE FLEET",
+    "POST FLEET",
+    "BOTH FLEET"
 };
 
 const char* const gSubMenu_RESET[] =
