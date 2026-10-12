@@ -153,7 +153,9 @@ enable_feature(ENABLE_TX1750)
 enable_feature(ENABLE_PWRON_PASSWORD
     ui/lock.c
 )
-enable_feature(ENABLE_DTMF_CALLING)
+# Temporarily omit DTMF selective calling/contact handling to recover flash for TrueMDC.
+# Basic DTMF transmit and live-digit display remain available.
+# enable_feature(ENABLE_DTMF_CALLING)
 enable_feature(ENABLE_FLASHLIGHT
     app/flashlight.c
 )
