@@ -961,6 +961,14 @@ void RADIO_SetupRegisters(bool switchToForeground)
     RADIO_SetupAGC(gRxVfo->Modulation == MODULATION_AM, false);
     //RADIO_SetupAGC(false, false);
 
+    /* Arm the BK4829 FFSK decoder only for FM signalling modes. */
+    if (gEeprom.ROGER != ROGER_MODE_OFF && gRxVfo->Modulation == MODULATION_FM) {
+        BK4819_PrepareSignallingReceive();
+        InterruptMask |= BK4819_REG_3F_FSK_RX_SYNC
+                      | BK4819_REG_3F_FSK_RX_FINISHED
+                      | BK4819_REG_3F_FSK_FIFO_ALMOST_FULL;
+    }
+
     // enable/disable BK4819 selected interrupts
     BK4819_WriteRegister(BK4819_REG_3F, InterruptMask);
 
