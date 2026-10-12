@@ -96,8 +96,6 @@ enum
     MENU_PONMSG,
     MENU_ROGER,
     MENU_MDC_ID,
-    MENU_FS_FLEET,
-    MENU_FS_UNIT,
     MENU_VOL,
     MENU_BAT_TXT,
     MENU_AM,
