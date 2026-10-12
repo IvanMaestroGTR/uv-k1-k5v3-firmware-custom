@@ -861,6 +861,9 @@ void MENU_AcceptSetting(void)
             gEeprom.FLEETSYNC_UNIT = gSubMenuSelection;
             break;
 
+        case MENU_RX_ID:
+            return; // Read-only: the display is populated by the RX decoder.
+
         case MENU_AM:
             gTxVfo->Modulation     = gSubMenuSelection;
             gRequestSaveChannel = 1;
@@ -1274,6 +1277,10 @@ void MENU_ShowCurrentSetting(void)
             gSubMenuSelection = gEeprom.FLEETSYNC_UNIT;
             break;
 
+        case MENU_RX_ID:
+            gSubMenuSelection = 0;
+            break;
+
         case MENU_AM:
             gSubMenuSelection = gTxVfo->Modulation;
             break;
@@ -1586,6 +1593,28 @@ static void MENU_Key_0_to_9(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
     }
 
     const int m = UI_MENU_GetCurrentMenuId();
+
+    if (m == MENU_MDC_ID || m == MENU_FS_FLEET || m == MENU_FS_UNIT)
+    {
+        const uint8_t digits = (m == MENU_MDC_ID) ? 5u : (m == MENU_FS_FLEET) ? 3u : 4u;
+        if (gInputBoxIndex < digits)
+            return;
+
+        for (uint8_t i = 0; i < digits; i++)
+            Value = (Value * 10) + (uint16_t)gInputBox[i];
+        gInputBoxIndex = 0;
+
+        Min = (m == MENU_MDC_ID) ? 0 : (m == MENU_FS_FLEET) ? 100 : 1000;
+        Max = (m == MENU_MDC_ID) ? 65535 : (m == MENU_FS_FLEET) ? 349 : 4999;
+        if (Value < Min || Value > Max)
+        {
+            gBeepToPlay = BEEP_500HZ_60MS_DOUBLE_BEEP_OPTIONAL;
+            return;
+        }
+
+        gSubMenuSelection = Value;
+        return;
+    }
 
     if (m == MENU_MEM_CH ||
         m == MENU_DEL_CH ||
