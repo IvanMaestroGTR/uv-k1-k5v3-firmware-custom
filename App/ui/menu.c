@@ -1486,6 +1486,7 @@ void UI_DisplayMenu(void)
                 already_printed = true;
             } else {
                 sprintf(String, "%04X", (unsigned)gEeprom.MDC1200_ID);
+                edit_index = -1;
             }
             break;
 
@@ -1501,10 +1502,15 @@ void UI_DisplayMenu(void)
                     const uint8_t column = edit_index < 3 ? edit_index : edit_index - 4;
                     UI_PrintStringSmall("^", menu_item_x1 + (7 * column), 0, line + 1);
                 }
-                already_printed = true;
             } else {
-                sprintf(String, "%03u\n%04u", (unsigned)gEeprom.FLEETSYNC_FLEET, (unsigned)gEeprom.FLEETSYNC_UNIT);
+                sprintf(String, "%03u", (unsigned)gEeprom.FLEETSYNC_FLEET);
+                UI_PrintStringSmall(String, menu_item_x1, 0, 2);
+                sprintf(String, "%04u", (unsigned)gEeprom.FLEETSYNC_UNIT);
+                UI_PrintStringSmall(String, menu_item_x1, 0, 4);
+                edit_index = -1;
+                sprintf(edit, "%03u\n%04u", (unsigned)gEeprom.FLEETSYNC_FLEET, (unsigned)gEeprom.FLEETSYNC_UNIT);
             }
+            already_printed = true;
             break;
 
         case MENU_RX_ID:
