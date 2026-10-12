@@ -110,6 +110,14 @@ void     BK4819_PrepareToPlayTone(bool bTuningGainSwitch);
 void     BK4819_PlayTone(uint16_t Frequency, bool bTuningGainSwitch);
 void     BK4819_PlayToneRaw(const unsigned int tone_Hz, const unsigned int delay);
 void     BK4819_PlaySingleTone(const unsigned int tone_Hz, const unsigned int delay, const unsigned int level, const bool play_speaker);
+typedef enum {
+    BK4819_TPT_OFF = 0,
+    BK4819_TPT_XTS,
+    BK4819_TPT_TRBO,
+    BK4819_TPT_KENWOOD
+} BK4819_TalkPermitTone_t;
+
+void     BK4819_PlayTalkPermitToneTx(uint8_t mode, bool play_speaker);
 void     BK4819_EnterTxMute(void);
 void     BK4819_ExitTxMute(void);
 void     BK4819_Sleep(void);
