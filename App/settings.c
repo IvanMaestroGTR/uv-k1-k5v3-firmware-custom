@@ -303,7 +303,7 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
     // 0EA8..0EAF
     PY25Q16_ReadBuffer(0x00A0A8 + 0x18, Data, 8);
     const uint8_t savedRogerMode = Data[1];
-    /* Reserved bytes in this 0x50-byte settings block: +0x20..+0x27. */
+    /* Dedicated signalling config block, separate from the boot-message strings. */
     PY25Q16_ReadBuffer(SETTINGS_SIGNALLING_CONFIG_ADDR, Data, 8);
     const bool signallingSettingsVersioned = Data[6] == 0xA7u;
     if (signallingSettingsVersioned)
