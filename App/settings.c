@@ -307,7 +307,7 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
     PY25Q16_ReadBuffer(SETTINGS_SIGNALLING_CONFIG_ADDR, Data, 8);
     const bool signallingSettingsVersioned = Data[6] == 0xA7u;
     if (signallingSettingsVersioned)
-        gEeprom.ROGER = (savedRogerMode < 7u) ? savedRogerMode : ROGER_MODE_OFF;
+        gEeprom.ROGER = (savedRogerMode < 4u) ? savedRogerMode : ROGER_MODE_OFF;
     else
         /* Avoid changing an old normal-Roger setting into an unsolicited burst. */
         gEeprom.ROGER = (savedRogerMode == 2u) ? ROGER_MODE_MDC_BOTH : ROGER_MODE_OFF;
