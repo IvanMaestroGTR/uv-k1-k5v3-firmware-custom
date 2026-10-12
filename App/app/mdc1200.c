@@ -221,7 +221,7 @@ bool MDC1200_process_rx_data(
     const uint8_t *buffer8 = (const uint8_t *) buffer;
     unsigned int index;
 
-    // DO NOT CLEAR rx HERE! Clearing here breaks fragmented reception.[cite: 3]
+    // Preserve decoder state between chunks so fragmented packets can complete.
 
     for (index = 0; index < size; index++) {
         int bit;
