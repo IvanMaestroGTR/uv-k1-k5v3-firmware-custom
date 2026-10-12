@@ -313,14 +313,6 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
         gEeprom.ROGER = (savedRogerMode == 2u) ? ROGER_MODE_MDC_BOTH : ROGER_MODE_OFF;
     gEeprom.MDC1200_ID = signallingSettingsVersioned
                        ? (uint16_t)(Data[0] | ((uint16_t)Data[1] << 8)) : 1u;
-    gEeprom.FLEETSYNC_FLEET = signallingSettingsVersioned
-                            ? (uint16_t)(Data[2] | ((uint16_t)Data[3] << 8)) : 100u;
-    gEeprom.FLEETSYNC_UNIT = signallingSettingsVersioned
-                           ? (uint16_t)(Data[4] | ((uint16_t)Data[5] << 8)) : 1000u;
-    if (gEeprom.FLEETSYNC_FLEET < 100u || gEeprom.FLEETSYNC_FLEET > 349u)
-        gEeprom.FLEETSYNC_FLEET = 100u;
-    if (gEeprom.FLEETSYNC_UNIT < 1000u || gEeprom.FLEETSYNC_UNIT > 4999u)
-        gEeprom.FLEETSYNC_UNIT = 1000u;
     PY25Q16_ReadBuffer(0x00A0A8 + 0x18, Data, 8);
     gEeprom.REPEATER_TAIL_TONE_ELIMINATION = (Data[2] < 11) ? Data[2] : 0;
     gEeprom.TX_VFO                         = (Data[3] <  2) ? Data[3] : 0;
@@ -1121,10 +1113,6 @@ void SETTINGS_SaveSettings(void)
     PY25Q16_ReadBuffer(SETTINGS_SIGNALLING_CONFIG_ADDR, SignallingData, sizeof(SignallingData));
     SignallingData[0] = (uint8_t)(gEeprom.MDC1200_ID & 0xFFu);
     SignallingData[1] = (uint8_t)(gEeprom.MDC1200_ID >> 8);
-    SignallingData[2] = (uint8_t)(gEeprom.FLEETSYNC_FLEET & 0xFFu);
-    SignallingData[3] = (uint8_t)(gEeprom.FLEETSYNC_FLEET >> 8);
-    SignallingData[4] = (uint8_t)(gEeprom.FLEETSYNC_UNIT & 0xFFu);
-    SignallingData[5] = (uint8_t)(gEeprom.FLEETSYNC_UNIT >> 8);
     SignallingData[6] = 0xA7u;
     PY25Q16_WriteBuffer(SETTINGS_SIGNALLING_CONFIG_ADDR, SignallingData, sizeof(SignallingData), false);
 
