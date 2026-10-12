@@ -1179,7 +1179,6 @@ static void CheckRadioInterrupts(void)
 
             if (gSignallingRxActive &&
                 (interrupts.fskFifoAlmostFull || interrupts.fskRxFinied)) {
-                const unsigned int expectedWords = (gSignallingRxExpectedBytes + 1u) / 2u;
                 unsigned int wordsToRead = interrupts.fskRxFinied
                     ? (gSignallingRxBytes < gSignallingRxExpectedBytes
                         ? (gSignallingRxExpectedBytes - gSignallingRxBytes + 1u) / 2u : 0u)
