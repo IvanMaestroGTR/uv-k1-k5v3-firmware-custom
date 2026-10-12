@@ -32,8 +32,8 @@ jobs:
       - name: Build firmware toolchain container
         run: docker build --tag uvk1-uvk5v3 .
 
-      - name: Build Fusion firmware
-        run: ./compile-firmware.sh Fusion
+      - name: Build all supported release presets
+        run: ./compile-firmware.sh All
 
       - name: Upload firmware outputs
         if: always()
@@ -41,9 +41,9 @@ jobs:
         with:
           name: truemdc-port-build-output
           path: |
-            build/Fusion/*.elf
-            build/Fusion/*.bin
-            build/Fusion/*.hex
-            build/Fusion/*.map
+            build/*/*.elf
+            build/*/*.bin
+            build/*/*.hex
+            build/*/*.map
           if-no-files-found: warn
           retention-days: 7
