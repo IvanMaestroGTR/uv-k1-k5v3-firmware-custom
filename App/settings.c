@@ -957,6 +957,7 @@ void SETTINGS_SaveSettings(void)
     uint8_t *State;
     uint8_t tmp = 0;
     uint8_t SecBuf[0x50];
+    uint8_t SignallingData[8];
 
     // ----------------------
     // 0e70 - 0e80
