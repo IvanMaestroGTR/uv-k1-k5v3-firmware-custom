@@ -1489,15 +1489,7 @@ static void MENU_Key_0_to_9(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
         }
         return;
     }
-    if (gIsInSubMenu && edit_index >= 0 && currentMenu == MENU_FS_FLEET) {
-        if (!bKeyHeld && edit_index < 8) {
-            edit[edit_index] = (char)('0' + (Key - KEY_0));
-            ++edit_index;
-            if (edit_index == 3) ++edit_index;
-            gRequestDisplayScreen = DISPLAY_MENU;
-        }
-        return;
-    }
+
 
     if (bKeyHeld)
         return;
@@ -1939,11 +1931,6 @@ static void MENU_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
                 edit[i] = hexDigits[(gEeprom.MDC1200_ID >> ((3u - i) * 4u)) & 0x0Fu];
             edit[4] = '\0';
             edit_index = 0;
-        } else if (m == MENU_FS_FLEET) {
-            snprintf(edit, sizeof(edit), "%03u\n%04u",
-                     (unsigned)gEeprom.FLEETSYNC_FLEET, (unsigned)gEeprom.FLEETSYNC_UNIT);
-            edit_index = 0;
-        }
 
         return;
     }
@@ -1952,12 +1939,7 @@ static void MENU_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
         if (++edit_index < 4)
             return;
     }
-    if (UI_MENU_GetCurrentMenuId() == MENU_FS_FLEET && edit_index >= 0 && edit_index < 8) {
-        if (++edit_index == 3)
-            ++edit_index;
-        if (edit_index < 8)
-            return;
-    }
+
 
     if (UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME)
     {
@@ -2229,8 +2211,7 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
         }
         return;
     }
-    if (gIsInSubMenu && edit_index >= 0 && UI_MENU_GetCurrentMenuId() == MENU_FS_FLEET)
-        return;
+
 
     if (UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME && gIsInSubMenu && edit_index >= 0)
     {   // change the character
