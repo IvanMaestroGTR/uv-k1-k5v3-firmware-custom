@@ -1708,12 +1708,9 @@ static void MENU_Key_0_to_9(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 static void MENU_Key_EXIT(bool bKeyPressed, bool bKeyHeld)
 {
     if (gIsInSubMenu && edit_index > 0 &&
-        (UI_MENU_GetCurrentMenuId() == MENU_MDC_ID || UI_MENU_GetCurrentMenuId() == MENU_FS_FLEET) &&
+        UI_MENU_GetCurrentMenuId() == MENU_MDC_ID &&
         bKeyPressed && !bKeyHeld) {
-        if (edit_index == 4 && UI_MENU_GetCurrentMenuId() == MENU_FS_FLEET)
-            edit_index = 2;
-        else
-            --edit_index;
+        --edit_index;
         gRequestDisplayScreen = DISPLAY_MENU;
         return;
     }
