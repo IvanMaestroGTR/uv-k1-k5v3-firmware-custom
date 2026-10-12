@@ -118,6 +118,15 @@ if(ENABLE_LTO)
     target_compile_options(${EXE_NAME} PRIVATE -flto=auto)
 endif()
 
+# Keep the multiboot restore stub as a normal object so the post-link safety
+# checker can inspect its relocations even when the rest of Max uses LTO.
+if(ENABLE_LTO AND ENABLE_FEAT_F4HWN_MULTIBOOT_OVERLAY)
+    set_source_files_properties(
+        "${CMAKE_SOURCE_DIR}/App/driver/mb_flash.c"
+        PROPERTIES COMPILE_FLAGS "-fno-lto"
+    )
+endif()
+
 # Generate map file
 target_link_options(${EXE_NAME} PRIVATE "-Wl,-Map=${EXE_NAME}.map")
 
