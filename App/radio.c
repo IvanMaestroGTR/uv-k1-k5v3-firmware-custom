@@ -1079,6 +1079,9 @@ void RADIO_SetTxParameters(void)
             BK4819_SetCDCSSCodeWord(DCS_GetGolayCodeWord(gCurrentVfo->pTX->CodeType, gCurrentVfo->pTX->Code));
             break;
     }
+
+    /* Send the selected signalling pre-ID once TX has been prepared. */
+    BK4819_PlaySignalling(false);
 }
 
 void RADIO_SetModulation(ModulationMode_t modulation)
