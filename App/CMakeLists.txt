@@ -297,6 +297,16 @@ if(ENABLE_FEAT_F4HWN_MULTIBOOT_OVERLAY AND NOT ENABLE_FEAT_F4HWN_MULTIBOOT)
     message(FATAL_ERROR "ENABLE_FEAT_F4HWN_MULTIBOOT_OVERLAY requires ENABLE_FEAT_F4HWN_MULTIBOOT.")
 endif()
 
+# The overlay safety checker inspects mb_flash.c as a standalone object. Keep
+# that translation unit out of LTO so the RAM-stub isolation gate can still
+# inspect its relocations while the rest of a flash-constrained build uses LTO.
+if(ENABLE_LTO AND ENABLE_FEAT_F4HWN_MULTIBOOT_OVERLAY)
+    set_source_files_properties(
+        "${CMAKE_CURRENT_SOURCE_DIR}/driver/mb_flash.c"
+        PROPERTIES COMPILE_OPTIONS "-fno-lto"
+    )
+endif()
+
 # External-flash dump / restore over serial (host: UV Studio). Restore keeps the
 # device-specific calibration sector protected. Adds the
 # 0x0738 (read) / 0x073A (sector erase) / 0x073C (write) / 0x073E (CRC32) UART
