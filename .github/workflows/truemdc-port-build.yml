@@ -10,6 +10,7 @@ on:
       - 'Middlewares/**'
       - 'CMakeLists.txt'
       - 'CMakePresets.json'
+      - 'cmake/**'
       - 'Dockerfile'
       - 'compile-firmware.sh'
       - '.github/workflows/truemdc-port-build.yml'
