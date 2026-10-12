@@ -1908,6 +1908,7 @@ static void BK4819_SendMDC1200Burst(bool post_id)
     BK4819_WriteRegister(BK4819_REG_3F, 0x0000u);
     BK4819_WriteRegister(BK4819_REG_70, 0x0000u);
     BK4819_WriteRegister(BK4819_REG_58, 0x0000u);
+    BK4819_SetAF(BK4819_AF_FM);
 }
 
 static void BK4819_SendFleetSyncBurst(bool post_id)
@@ -1949,6 +1950,7 @@ static void BK4819_SendFleetSyncBurst(bool post_id)
     BK4819_WriteRegister(BK4819_REG_3F, 0x0000u);
     BK4819_WriteRegister(BK4819_REG_70, 0x0000u);
     BK4819_WriteRegister(BK4819_REG_58, 0x0000u);
+    BK4819_SetAF(BK4819_AF_FM);
 }
 
 void BK4819_PlaySignalling(bool post_id)
