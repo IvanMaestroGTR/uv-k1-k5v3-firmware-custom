@@ -967,6 +967,11 @@ void RADIO_SetupRegisters(bool switchToForeground)
         InterruptMask |= BK4819_REG_3F_FSK_RX_SYNC
                       | BK4819_REG_3F_FSK_RX_FINISHED
                       | BK4819_REG_3F_FSK_FIFO_ALMOST_FULL;
+    } else {
+        /* Do not leave the signalling FSK modem armed after the mode is disabled. */
+        BK4819_WriteRegister(BK4819_REG_59, 0x0000u);
+        BK4819_WriteRegister(BK4819_REG_70, 0x0000u);
+        BK4819_WriteRegister(BK4819_REG_58, 0x0000u);
     }
 
     // enable/disable BK4819 selected interrupts
