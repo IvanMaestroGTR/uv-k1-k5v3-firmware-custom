@@ -1142,12 +1142,11 @@ void BK4819_PlayTalkPermitToneTx(uint8_t mode, bool play_speaker)
     if (play_speaker) {
         AUDIO_AudioPathOn();
         BK4819_SetAF(BK4819_AF_BEEP);
-        BK4819_Enable_AfDac_DiscMode_TxDsp();
     } else {
         AUDIO_AudioPathOff();
         BK4819_SetAF(BK4819_AF_MUTE);
-        BK4819_EnableTXLink();
     }
+    BK4819_EnableTXLink();
     SYSTEM_DelayMs(1);
 
     for (unsigned int i = 0; i < count; i++) {
@@ -1165,7 +1164,6 @@ void BK4819_PlayTalkPermitToneTx(uint8_t mode, bool play_speaker)
     }
 
     BK4819_SetAF(BK4819_AF_MUTE);
-    BK4819_TxOn_Beep();
     SYSTEM_DelayMs(1);
     BK4819_ExitTxMute();
 }
