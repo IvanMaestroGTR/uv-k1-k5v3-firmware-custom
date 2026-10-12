@@ -94,7 +94,15 @@ enum
 #endif
     MENU_D_LIVE_DEC,
     MENU_PONMSG,
-    MENU_ROGER,
+    MENU_RX_LED,
+#ifdef ENABLE_MDC1200
+    MENU_MDC_ID,
+    MENU_MDC_TX,
+    MENU_MDC_RX,
+    MENU_MDC_MOD,
+    MENU_MDC_PRE,
+    MENU_TPT,
+#endif
     MENU_VOL,
     MENU_BAT_TXT,
     MENU_AM,
@@ -255,7 +263,12 @@ extern const char* const gSubMenu_PTT_ID[5];
     extern const char* const        gSubMenu_PONMSG[4];
 #endif
 
-extern const char* const            gSubMenu_ROGER[3];
+extern const char* const            gSubMenu_RX_LED[3];
+#ifdef ENABLE_MDC1200
+extern const char* const            gSubMenu_MDC_TX[4];
+extern const char* const            gSubMenu_MDC_MOD[2];
+extern const char* const            gSubMenu_TPT[5];
+#endif
 extern const char* const            gSubMenu_RESET[2];
 extern const char* const            gSubMenu_F_LOCK[F_LOCK_LEN];
 extern const char* const            gSubMenu_RX_TX[4];

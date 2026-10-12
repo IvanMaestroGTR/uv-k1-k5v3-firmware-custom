@@ -62,6 +62,9 @@
 #include "driver/st7565.h"
 #include "driver/system.h"
 #include "dtmf.h"
+#ifdef ENABLE_MDC1200
+    #include "app/mdc1200.h"
+#endif
 #include "external/printf/printf.h"
 #include "frequencies.h"
 #include "functions.h"
@@ -93,6 +96,9 @@ static void FullWatchPromoteCurrentBackground(void);
 static bool flagSaveVfo;
 static bool flagSaveSettings;
 static bool flagSaveChannel;
+static bool gCallStatusPending;
+static bool gCallStatusWaitForDualWatch;
+static uint16_t gCallStatusCountdown_10ms;
 
 #ifdef ENABLE_FEAT_F4HWN_SLEEP
 static KEY_Code_t gSleepWakeKey = KEY_INVALID;
@@ -658,6 +664,15 @@ Skip:
 
         case END_OF_RX_MODE_END:
             RADIO_SetupRegisters(true);
+
+            if (gRxVfo->Modulation == MODULATION_FM) {
+                gCallStatusPending = true;
+                gCallStatusWaitForDualWatch =
+                    gEeprom.DUAL_WATCH != DUAL_WATCH_OFF &&
+                    gScanStateDir == SCAN_OFF;
+                gCallStatusCountdown_10ms = gCallStatusWaitForDualWatch
+                                            ? 0u : 360u;
+            }
 
             #ifdef ENABLE_NOAA
                 if (IS_NOAA_CHANNEL(gRxVfo->CHANNEL_SAVE))
@@ -1245,7 +1260,6 @@ static void CheckRadioInterrupts(void)
 
         if (interrupts.sqlLost) {
             g_SquelchLost = true;
-            BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, true);
             #ifdef ENABLE_FEAT_F4HWN_RX_TX_TIMER
                 gRxTimerCountdown_500ms = 7200;
             #endif
@@ -1253,7 +1267,6 @@ static void CheckRadioInterrupts(void)
 
         if (interrupts.sqlFound) {
             g_SquelchLost = false;
-            BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, false);
         }
 
 #if defined(ENABLE_AIRCOPY) || defined(ENABLE_FEAT_F4HWN_BEAM)
@@ -1308,6 +1321,7 @@ static void CheckRadioInterrupts(void)
 
 void APP_EndTransmission(void)
 {
+    BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, false);
     // back to RX mode
     RADIO_SendEndOfTransmission();
 
@@ -1322,13 +1336,23 @@ void APP_EndTransmission(void)
 void APP_HandleEndTransmission(void) {
     if (gFlagEndTransmission) {
         FUNCTION_Select(FUNCTION_FOREGROUND);
+        if (gRxVfo->Modulation == MODULATION_FM) {
+            gCallStatusPending = true;
+            gCallStatusWaitForDualWatch = false;
+            gCallStatusCountdown_10ms = 360u;
+        }
     }
     else {
         APP_EndTransmission();
 
-        if (gEeprom.REPEATER_TAIL_TONE_ELIMINATION == 0)
+        if (gEeprom.REPEATER_TAIL_TONE_ELIMINATION == 0) {
             FUNCTION_Select(FUNCTION_FOREGROUND);
-        else
+            if (gRxVfo->Modulation == MODULATION_FM) {
+                gCallStatusPending = true;
+                gCallStatusWaitForDualWatch = false;
+                gCallStatusCountdown_10ms = 360u;
+            }
+        } else
             gRTTECountdown_10ms = gEeprom.REPEATER_TAIL_TONE_ELIMINATION * 10;
     }
 
@@ -1508,8 +1532,12 @@ void APP_Update(void)
         GUI_DisplayScreen();
     }
 
-    if (gReducedService)
+    if (gReducedService) {
+#ifdef ENABLE_MDC1200
+        MDC1200_AppDisableRx();
+#endif
         return;
+    }
 
     if (gCurrentFunction != FUNCTION_TRANSMIT)
         HandleFunction();
@@ -1863,6 +1891,97 @@ void CheckKeys(void)
     }
 }
 
+/* TrueMDC/9M2RTX status-light behavior.  The BK4829 exposes the same two
+ * physical LED GPIOs, so only the policy is ported; no BK4819 register values
+ * are copied. */
+static void APP_StatusLedTimeSlice10ms(void)
+{
+    static uint16_t powerSaveCounter;
+    static uint16_t rxBlinkCounter;
+    bool red = false;
+    bool green = false;
+
+    if (gCallStatusPending) {
+        if (gFlagPrepareTX || gCurrentFunction == FUNCTION_TRANSMIT ||
+            gRxVfo->Modulation != MODULATION_FM || g_SquelchLost) {
+            gCallStatusPending = false;
+            gCallStatusWaitForDualWatch = false;
+            gCallStatusCountdown_10ms = 0;
+        } else if (gCallStatusWaitForDualWatch && !gDualWatchActive) {
+            /* Match 9M2RTX: yellow remains until dual watch resumes. */
+        } else if (gCallStatusCountdown_10ms > 0u) {
+            --gCallStatusCountdown_10ms;
+        } else {
+            gCallStatusPending = false;
+            gCallStatusWaitForDualWatch = false;
+        }
+    }
+
+    if (gCurrentFunction == FUNCTION_TRANSMIT) {
+        /* 9M2RTX uses green, rather than the stock red indication, for TX. */
+        green = true;
+        powerSaveCounter = 0;
+        rxBlinkCounter = 0;
+    } else if (gCurrentFunction == FUNCTION_POWER_SAVE) {
+        ++powerSaveCounter;
+        rxBlinkCounter = 0;
+
+        if (gBatteryVoltageAverage < 700u) {
+            /* Critical: two 80 ms red flashes, then the long pause. */
+            red = (powerSaveCounter >= 1u && powerSaveCounter <= 8u) ||
+                  (powerSaveCounter > 16u && powerSaveCounter <= 24u);
+            if (powerSaveCounter >= 424u)
+                powerSaveCounter = 0;
+        } else if (gBatteryVoltageAverage <= 760u) {
+            /* Low: one 80 ms red flash. */
+            red = powerSaveCounter >= 1u && powerSaveCounter <= 8u;
+            if (powerSaveCounter >= 308u)
+                powerSaveCounter = 0;
+        } else {
+            /* Normal: one 80 ms green flash. */
+            green = powerSaveCounter >= 1u && powerSaveCounter <= 8u;
+            if (powerSaveCounter >= 208u)
+                powerSaveCounter = 0;
+        }
+    } else {
+        powerSaveCounter = 0;
+        if (g_SquelchLost) {
+            switch (gEeprom.RX_LIGHT_MODE) {
+            case RX_LIGHT_MODE_OFF:
+                rxBlinkCounter = 0;
+                break;
+            case RX_LIGHT_MODE_SOLID:
+                green = true;
+                rxBlinkCounter = 0;
+                break;
+            case RX_LIGHT_MODE_BLINK:
+            default:
+                ++rxBlinkCounter;
+                green = rxBlinkCounter <= 8u;
+                if (rxBlinkCounter >= 50u)
+                    rxBlinkCounter = 0;
+                break;
+            }
+        } else {
+            rxBlinkCounter = 0;
+        }
+    }
+
+    /* The post-call standby indication is yellow (red + green). */
+    if (gCallStatusPending &&
+        (!gCallStatusWaitForDualWatch || !gDualWatchActive)) {
+        red = true;
+        green = true;
+    }
+
+    /* Avoid rewriting REG_33 twice every 10 ms.  Besides wasting bus time,
+     * unconditional writes make any stray UI LED write visible as a flash. */
+    if (BK4819_IsGpioOutSet(BK4819_GPIO5_PIN1_RED) != red)
+        BK4819_ToggleGpioOut(BK4819_GPIO5_PIN1_RED, red);
+    if (BK4819_IsGpioOutSet(BK4819_GPIO6_PIN2_GREEN) != green)
+        BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, green);
+}
+
 void APP_TimeSlice10ms(void)
 {
     gNextTimeslice = false;
@@ -1888,10 +2007,16 @@ void APP_TimeSlice10ms(void)
     if (gReducedService)
         return;
 
+#ifdef ENABLE_MDC1200
+    MDC1200_AppTick10ms();
+#endif
+
     UI_MAIN_TimeSlice10ms();   // scan-list name hold countdown (10 ms resolution)
 
     if (gCurrentFunction != FUNCTION_POWER_SAVE || !gRxIdleMode)
         CheckRadioInterrupts();
+
+    APP_StatusLedTimeSlice10ms();
 #ifdef ENABLE_FEAT_F4HWN_ACTION_PICKER
     if (gActionPickerKey != 0 && FUNCTION_IsRx()) {
         gActionPickerKey = 0;
@@ -1990,6 +2115,12 @@ void APP_TimeSlice10ms(void)
                 //if (gCurrentFunction != FUNCTION_FOREGROUND)
                     FUNCTION_Select(FUNCTION_FOREGROUND);
 
+                if (gRxVfo->Modulation == MODULATION_FM) {
+                    gCallStatusPending = true;
+                    gCallStatusWaitForDualWatch = false;
+                    gCallStatusCountdown_10ms = 360u;
+                }
+
                 gUpdateStatus  = true;
                 gUpdateDisplay = true;
             }
@@ -2065,6 +2196,10 @@ void APP_TimeSlice500ms(void)
 
 #ifdef ENABLE_FEAT_F4HWN_RXTX_LOG
     RXTX_LOG_Tick500ms();
+#endif
+
+#ifdef ENABLE_MDC1200
+    MDC1200_AppTick500ms();
 #endif
 
 #ifdef ENABLE_FEAT_F4HWN_RX_TX_TIMER
@@ -2217,7 +2352,10 @@ void APP_TimeSlice500ms(void)
 
     if (gReducedService)
     {
-        BOARD_ADC_GetBatteryInfo(&gBatteryCurrentVoltage, &gBatteryCurrent);
+        #ifdef ENABLE_MDC1200
+        if (!MDC1200_AppRxSampling())
+        #endif
+            BOARD_ADC_GetBatteryInfo(&gBatteryCurrentVoltage, &gBatteryCurrent);
 
         if (gBatteryCurrent > 500 || gBatteryCalibration[3] < gBatteryCurrentVoltage)
         {
@@ -2243,10 +2381,15 @@ void APP_TimeSlice500ms(void)
 #if defined(ENABLE_FEAT_F4HWN_OVERLAY_APPS) || defined(ENABLE_FEAT_F4HWN_FOXHUNT) || defined(ENABLE_FEAT_F4HWN_BEACON)
             BATTERY_Sample(true);
 #else
-            BOARD_ADC_GetBatteryInfo(&gBatteryVoltages[gBatteryVoltageIndex++], &gBatteryCurrent);
-            if (gBatteryVoltageIndex > 3)
-                gBatteryVoltageIndex = 0;
-            BATTERY_GetReadings(true);
+            #ifdef ENABLE_MDC1200
+            if (!MDC1200_AppRxSampling())
+            #endif
+            {
+                BOARD_ADC_GetBatteryInfo(&gBatteryVoltages[gBatteryVoltageIndex++], &gBatteryCurrent);
+                if (gBatteryVoltageIndex > 3)
+                    gBatteryVoltageIndex = 0;
+                BATTERY_GetReadings(true);
+            }
 #endif
         }
     }

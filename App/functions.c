@@ -17,6 +17,10 @@
 #include <string.h>
 
 #include "app/dtmf.h"
+#ifdef ENABLE_MDC1200
+    #include "app/mdc1200.h"
+    #include "app/tpt.h"
+#endif
 #if defined(ENABLE_FMRADIO_EMBEDDED)
     #include "app/fm.h"
 #endif
@@ -144,6 +148,10 @@ void FUNCTION_PowerSave() {
 
 void FUNCTION_Transmit()
 {
+#ifdef ENABLE_MDC1200
+    MDC1200_AppDisableRx();
+#endif
+
     // if DTMF is enabled when TX'ing, it changes the TX audio filtering !! .. 1of11
     BK4819_DisableDTMF();
 
@@ -174,6 +182,18 @@ void FUNCTION_Transmit()
 
     if (gCurrentVfo->DTMF_PTT_ID_TX_MODE == PTT_ID_APOLLO)
         BK4819_PlaySingleTone(2525, 250, 0, gEeprom.DTMF_SIDE_TONE);
+
+#ifdef ENABLE_MDC1200
+    if (gEeprom.MDC1200_TX_MODE == MDC1200_TX_PRE ||
+        gEeprom.MDC1200_TX_MODE == MDC1200_TX_BOTH) {
+        MDC1200_Send(MDC1200_OP_PTT_ID, MDC1200_ARG_PRE_ID,
+                     gEeprom.MDC1200_ID, gEeprom.MDC1200_PREAMBLE,
+                     gEeprom.MDC1200_TONE_MODE);
+    }
+
+    if (gEeprom.TALK_PERMIT_TONE != TPT_MODE_OFF)
+        TPT_Play(gEeprom.TALK_PERMIT_TONE);
+#endif
 
 #ifdef ENABLE_TX1750
     if (gTx1750Active) {
