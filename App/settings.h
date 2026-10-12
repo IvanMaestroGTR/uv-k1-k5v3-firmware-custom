@@ -28,6 +28,7 @@
 /* Shared PY25Q16 locations for the two configurable boot-message lines. */
 #define SETTINGS_BOOT_MESSAGE_LINE1_ADDR 0x00A0C8u
 #define SETTINGS_BOOT_MESSAGE_LINE2_ADDR 0x00A0D8u
+#define SETTINGS_SIGNALLING_CONFIG_ADDR  0x00A180u
 
 enum POWER_OnDisplayMode_t {
 #ifdef ENABLE_FEAT_F4HWN
