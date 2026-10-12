@@ -302,9 +302,15 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
 
     // 0EA8..0EAF
     PY25Q16_ReadBuffer(0x00A0A8 + 0x18, Data, 8);
-    gEeprom.ROGER                          = (Data[1] <  7) ? Data[1] : ROGER_MODE_OFF;
-    /* Reserved bytes in this 0x50-byte settings block: +0x20..+0x25. */
+    const uint8_t savedRogerMode = Data[1];
+    /* Reserved bytes in this 0x50-byte settings block: +0x20..+0x27. */
     PY25Q16_ReadBuffer(0x00A0A8 + 0x20, Data, 8);
+    const bool signallingSettingsVersioned = Data[6] == 0xA7u;
+    if (signallingSettingsVersioned)
+        gEeprom.ROGER = (savedRogerMode < 7u) ? savedRogerMode : ROGER_MODE_OFF;
+    else
+        /* Avoid changing an old normal-Roger setting into an unsolicited burst. */
+        gEeprom.ROGER = (savedRogerMode == 2u) ? ROGER_MODE_MDC_BOTH : ROGER_MODE_OFF;
     gEeprom.MDC1200_ID = (Data[0] == 0xFF && Data[1] == 0xFF)
                        ? 1u : (uint16_t)(Data[0] | ((uint16_t)Data[1] << 8));
     gEeprom.FLEETSYNC_FLEET = (Data[2] == 0xFF && Data[3] == 0xFF)
@@ -1095,6 +1101,7 @@ void SETTINGS_SaveSettings(void)
     State[3] = (uint8_t)(gEeprom.FLEETSYNC_FLEET >> 8);
     State[4] = (uint8_t)(gEeprom.FLEETSYNC_UNIT & 0xFFu);
     State[5] = (uint8_t)(gEeprom.FLEETSYNC_UNIT >> 8);
+    State[6] = 0xA7u; /* Signalling settings format marker */
 
     // 0x0ED0
     State = SecBuf + 0x40;
