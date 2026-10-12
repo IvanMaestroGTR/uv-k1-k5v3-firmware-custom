@@ -1884,7 +1884,7 @@ static void BK4819_SendMDC1200Burst(bool post_id)
     BK4819_WriteRegister(BK4819_REG_5B, 0x0000);
     BK4819_WriteRegister(BK4819_REG_5C, 0xAA30);
     BK4819_WriteRegister(BK4819_REG_5D, (uint16_t)((size - 1u) << 8));
-    BK4819_WriteRegister(BK4819_REG_59, 0x8000u);
+    BK4819_WriteRegister(BK4819_REG_59, 0xC000u);
     BK4819_WriteRegister(BK4819_REG_59, 0x0000u);
 
     for (unsigned int i = 0; i < size; i += 2u) {
@@ -1929,7 +1929,7 @@ static void BK4819_SendFleetSyncBurst(bool post_id)
     BK4819_WriteRegister(BK4819_REG_5B, 0x23EB);
     BK4819_WriteRegister(BK4819_REG_5C, 0xAA30);
     BK4819_WriteRegister(BK4819_REG_5D, 0x0700u); /* 8 ANI bytes; hardware sends 4 sync bytes */
-    BK4819_WriteRegister(BK4819_REG_59, 0x8028u);
+    BK4819_WriteRegister(BK4819_REG_59, 0xC028u);
     BK4819_WriteRegister(BK4819_REG_59, 0x0028u);
 
     for (unsigned int i = 0; i < 8u; i += 2u)
