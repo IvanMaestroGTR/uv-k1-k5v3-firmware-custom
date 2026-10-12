@@ -1513,7 +1513,7 @@ static void MENU_Key_0_to_9(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 
     const int currentMenu = UI_MENU_GetCurrentMenuId();
     if (gIsInSubMenu && edit_index >= 0 && currentMenu == MENU_MDC_ID) {
-        if (edit_index < 4) {
+        if (!bKeyHeld && edit_index < 4) {
             edit[edit_index] = (char)('0' + (Key - KEY_0));
             ++edit_index;
             gRequestDisplayScreen = DISPLAY_MENU;
@@ -1521,7 +1521,7 @@ static void MENU_Key_0_to_9(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
         return;
     }
     if (gIsInSubMenu && edit_index >= 0 && currentMenu == MENU_FS_FLEET) {
-        if (edit_index < 8) {
+        if (!bKeyHeld && edit_index < 8) {
             edit[edit_index] = (char)('0' + (Key - KEY_0));
             ++edit_index;
             if (edit_index == 3) ++edit_index;
