@@ -315,6 +315,7 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
         gEeprom.FLEETSYNC_FLEET = 100u;
     if (gEeprom.FLEETSYNC_UNIT < 1000u || gEeprom.FLEETSYNC_UNIT > 4999u)
         gEeprom.FLEETSYNC_UNIT = 1000u;
+    PY25Q16_ReadBuffer(0x00A0A8 + 0x18, Data, 8);
     gEeprom.REPEATER_TAIL_TONE_ELIMINATION = (Data[2] < 11) ? Data[2] : 0;
     gEeprom.TX_VFO                         = (Data[3] <  2) ? Data[3] : 0;
     gEeprom.BATTERY_TYPE                   = (Data[4] < BATTERY_TYPE_UNKNOWN) ? Data[4] : BATTERY_TYPE_1600_MAH;
