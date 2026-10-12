@@ -311,12 +311,12 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
     else
         /* Avoid changing an old normal-Roger setting into an unsolicited burst. */
         gEeprom.ROGER = (savedRogerMode == 2u) ? ROGER_MODE_MDC_BOTH : ROGER_MODE_OFF;
-    gEeprom.MDC1200_ID = (Data[0] == 0xFF && Data[1] == 0xFF)
-                       ? 1u : (uint16_t)(Data[0] | ((uint16_t)Data[1] << 8));
-    gEeprom.FLEETSYNC_FLEET = (Data[2] == 0xFF && Data[3] == 0xFF)
-                            ? 100u : (uint16_t)(Data[2] | ((uint16_t)Data[3] << 8));
-    gEeprom.FLEETSYNC_UNIT = (Data[4] == 0xFF && Data[5] == 0xFF)
-                           ? 1000u : (uint16_t)(Data[4] | ((uint16_t)Data[5] << 8));
+    gEeprom.MDC1200_ID = signallingSettingsVersioned
+                       ? (uint16_t)(Data[0] | ((uint16_t)Data[1] << 8)) : 1u;
+    gEeprom.FLEETSYNC_FLEET = signallingSettingsVersioned
+                            ? (uint16_t)(Data[2] | ((uint16_t)Data[3] << 8)) : 100u;
+    gEeprom.FLEETSYNC_UNIT = signallingSettingsVersioned
+                           ? (uint16_t)(Data[4] | ((uint16_t)Data[5] << 8)) : 1000u;
     if (gEeprom.FLEETSYNC_FLEET < 100u || gEeprom.FLEETSYNC_FLEET > 349u)
         gEeprom.FLEETSYNC_FLEET = 100u;
     if (gEeprom.FLEETSYNC_UNIT < 1000u || gEeprom.FLEETSYNC_UNIT > 4999u)
