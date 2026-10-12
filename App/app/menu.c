@@ -1970,7 +1970,10 @@ static void MENU_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
         }
 
         if (m == MENU_MDC_ID) {
-            snprintf(edit, sizeof(edit), "%04X", (unsigned)gEeprom.MDC1200_ID);
+            static const char hexDigits[] = "0123456789ABCDEF";
+            for (unsigned int i = 0; i < 4; i++)
+                edit[i] = hexDigits[(gEeprom.MDC1200_ID >> ((3u - i) * 4u)) & 0x0Fu];
+            edit[4] = '\0';
             edit_index = 0;
         } else if (m == MENU_FS_FLEET) {
             snprintf(edit, sizeof(edit), "%03u\n%04u",
