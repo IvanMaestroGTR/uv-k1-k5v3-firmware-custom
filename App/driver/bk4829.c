@@ -20,6 +20,8 @@
 
 #include "settings.h"
 #include "misc.h"
+#include "app/mdc1200.h"
+#include "app/fleetsync.h"
 
 #include "audio.h"
 
@@ -1937,13 +1939,116 @@ void BK4819_PlayRogerMDC(void)
     BK4819_WriteRegister(BK4819_REG_58, 0x0000);
 }
 
+/*
+ * The BK4829 FFSK register profile below is cross-checked against Dondji's
+ * BK4829 implementation. The software codecs are shared with TrueMDC, but
+ * the FIFO and interrupt sequence is kept local to this target driver.
+ */
+static void BK4819_SendMDC1200Burst(bool post_id)
+{
+    uint8_t packet[64];
+    const unsigned int size = MDC1200_encode_single_packet(
+        packet, 0x01u, post_id ? 0x00u : 0x80u, gEeprom.MDC1200_ID);
+    if (size == 0u || size > sizeof(packet))
+        return;
+
+    BK4819_SetAF(BK4819_AF_MUTE);
+    BK4819_WriteRegister(BK4819_REG_58, 0x37C3);
+    BK4819_WriteRegister(BK4819_REG_72, 0x3065);
+    BK4819_WriteRegister(BK4819_REG_70, 0x00C3);
+    BK4819_WriteRegister(BK4819_REG_5A, 0x0000);
+    BK4819_WriteRegister(BK4819_REG_5B, 0x0000);
+    BK4819_WriteRegister(BK4819_REG_5C, 0xAA30);
+    BK4819_WriteRegister(BK4819_REG_5D, (uint16_t)((size - 1u) << 8));
+    BK4819_WriteRegister(BK4819_REG_59, 0x8000u);
+    BK4819_WriteRegister(BK4819_REG_59, 0x0000u);
+
+    for (unsigned int i = 0; i < size; i += 2u) {
+        uint16_t word = packet[i];
+        if (i + 1u < size)
+            word |= (uint16_t)packet[i + 1u] << 8;
+        BK4819_WriteRegister(BK4819_REG_5F, word);
+    }
+
+    BK4819_WriteRegister(BK4819_REG_3F, BK4819_REG_3F_FSK_TX_FINISHED);
+    BK4819_WriteRegister(BK4819_REG_59, 0x0800u);
+    for (unsigned int timeout = 250u; timeout > 0u; timeout--) {
+        SYSTEM_DelayMs(4);
+        if (BK4819_ReadRegister(BK4819_REG_0C) & 1u) {
+            BK4819_WriteRegister(BK4819_REG_02, 0);
+            if (BK4819_ReadRegister(BK4819_REG_02) & BK4819_REG_02_FSK_TX_FINISHED)
+                break;
+        }
+    }
+    BK4819_WriteRegister(BK4819_REG_59, 0x0000u);
+    BK4819_WriteRegister(BK4819_REG_3F, 0x0000u);
+    BK4819_WriteRegister(BK4819_REG_70, 0x0000u);
+    BK4819_WriteRegister(BK4819_REG_58, 0x0000u);
+}
+
+static void BK4819_SendFleetSyncBurst(bool post_id)
+{
+    uint8_t packet[FLEETSYNC_PACKET_SIZE];
+    const unsigned int packet_size = FleetSync_encode_ani(
+        packet, gEeprom.FLEETSYNC_FLEET, gEeprom.FLEETSYNC_UNIT, post_id);
+    if (packet_size != FLEETSYNC_PACKET_SIZE)
+        return;
+
+    /* BK4829 hardware emits the FleetSync sync and alternating FFSK preamble.
+       Do not append the unwanted standalone 1800 Hz / 00000000 sync tone. */
+    BK4819_SetAF(BK4819_AF_MUTE);
+    BK4819_WriteRegister(BK4819_REG_58, 0x37C3);
+    BK4819_WriteRegister(BK4819_REG_72, 0x3065);
+    BK4819_WriteRegister(BK4819_REG_70, 0x00C3);
+    BK4819_WriteRegister(BK4819_REG_5A, 0xAAAA);
+    BK4819_WriteRegister(BK4819_REG_5B, 0x23EB);
+    BK4819_WriteRegister(BK4819_REG_5C, 0xAA30);
+    BK4819_WriteRegister(BK4819_REG_5D, 0x0700u); /* 8 ANI bytes; hardware sends 4 sync bytes */
+    BK4819_WriteRegister(BK4819_REG_59, 0x8028u);
+    BK4819_WriteRegister(BK4819_REG_59, 0x0028u);
+
+    for (unsigned int i = 0; i < 8u; i += 2u)
+        BK4819_WriteRegister(BK4819_REG_5F,
+            (uint16_t)packet[i + 4u] | ((uint16_t)packet[i + 5u] << 8));
+
+    BK4819_WriteRegister(BK4819_REG_3F, BK4819_REG_3F_FSK_TX_FINISHED);
+    BK4819_WriteRegister(BK4819_REG_59, 0x0828u);
+    for (unsigned int timeout = 250u; timeout > 0u; timeout--) {
+        SYSTEM_DelayMs(4);
+        if (BK4819_ReadRegister(BK4819_REG_0C) & 1u) {
+            BK4819_WriteRegister(BK4819_REG_02, 0);
+            if (BK4819_ReadRegister(BK4819_REG_02) & BK4819_REG_02_FSK_TX_FINISHED)
+                break;
+        }
+    }
+    BK4819_WriteRegister(BK4819_REG_59, 0x0028u);
+    BK4819_WriteRegister(BK4819_REG_3F, 0x0000u);
+    BK4819_WriteRegister(BK4819_REG_70, 0x0000u);
+    BK4819_WriteRegister(BK4819_REG_58, 0x0000u);
+}
+
+void BK4819_PlaySignalling(bool post_id)
+{
+    const uint8_t mode = (uint8_t)gEeprom.ROGER;
+    const bool mdc = mode >= ROGER_MODE_MDC_PRE && mode <= ROGER_MODE_MDC_BOTH;
+    const bool fleetsync = mode >= ROGER_MODE_FLEETSYNC_PRE && mode <= ROGER_MODE_FLEETSYNC_BOTH;
+    const bool send_pre = mode == ROGER_MODE_MDC_PRE || mode == ROGER_MODE_MDC_BOTH ||
+                          mode == ROGER_MODE_FLEETSYNC_PRE || mode == ROGER_MODE_FLEETSYNC_BOTH;
+    const bool send_post = mode == ROGER_MODE_MDC_POST || mode == ROGER_MODE_MDC_BOTH ||
+                           mode == ROGER_MODE_FLEETSYNC_POST || mode == ROGER_MODE_FLEETSYNC_BOTH;
+    if (mode == ROGER_MODE_OFF || (post_id && !send_post) || (!post_id && !send_pre))
+        return;
+
+    if (mdc)
+        BK4819_SendMDC1200Burst(post_id);
+    else if (fleetsync)
+        BK4819_SendFleetSyncBurst(post_id);
+}
+
 void BK4819_PlayRoger(BK4819_FilterBandwidth_t Bandwidth)
 {
-    if (gEeprom.ROGER == ROGER_MODE_ROGER) {
-        BK4819_PlayRogerNormal(Bandwidth);
-    } else if (gEeprom.ROGER == ROGER_MODE_MDC) {
-        BK4819_PlayRogerMDC();
-    }
+    (void)Bandwidth;
+    BK4819_PlaySignalling(true);
 }
 
 void BK4819_Enable_AfDac_DiscMode_TxDsp(void)
