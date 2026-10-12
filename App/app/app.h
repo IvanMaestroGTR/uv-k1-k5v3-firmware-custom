@@ -23,6 +23,14 @@
 #include "frequencies.h"
 #include "radio.h"
 
+/* Last successfully decoded TrueMDC signalling burst (0=none, 1=MDC, 2=FleetSync). */
+extern volatile uint8_t  gSignallingLastProtocol;
+extern volatile uint8_t  gSignallingLastOpcode;
+extern volatile uint8_t  gSignallingLastArgument;
+extern volatile uint16_t gSignallingLastMDCID;
+extern volatile uint16_t gSignallingLastFleet;
+extern volatile uint16_t gSignallingLastUnit;
+
 void     APP_EndTransmission(void);
 void     APP_HandleEndTransmission(void);
 void     APP_StartListening(FUNCTION_Type_t function);
