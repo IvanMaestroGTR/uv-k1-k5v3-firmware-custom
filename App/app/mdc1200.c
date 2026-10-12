@@ -17,7 +17,7 @@ static uint16_t MDC1200_crc16(const void *data, unsigned int length)
     return crc;
 }
 
-void error_correction(void *data) {
+static void error_correction(void *data) {
     int i;
     uint8_t shift_reg;
     uint8_t syn;
@@ -54,7 +54,7 @@ void error_correction(void *data) {
     }
 }
 
-bool decode_data(void *data) {
+static bool decode_data(void *data) {
     uint16_t crc1;
     uint16_t crc2;
     uint8_t *data8 = (uint8_t *) data;
@@ -107,7 +107,7 @@ bool decode_data(void *data) {
 }
 
 
-void xor_modulation(void *data, const unsigned int size) {
+static void xor_modulation(void *data, const unsigned int size) {
     unsigned int i;
     uint8_t *data8 = (uint8_t *) data;
     uint8_t prev_bit = 0;
@@ -126,7 +126,7 @@ void xor_modulation(void *data, const unsigned int size) {
 }
 
 
-uint8_t *encode_data(void *data) {
+static uint8_t *encode_data(void *data) {
     uint8_t *data8 = (uint8_t *) data;
     {
         unsigned int i;
@@ -193,6 +193,19 @@ unsigned int MDC1200_encode_single_packet(void *data, const uint8_t op, const ui
     xor_modulation(data, size);
     return size;
 }
+
+
+struct {
+    uint8_t bit;
+    uint8_t prev_bit;
+    uint8_t xor_bit;
+    uint64_t shift_reg;
+    unsigned int bit_count;
+    unsigned int stage;
+    bool inverted_sync;
+    unsigned int data_index;
+    uint8_t data[40];
+} rx;
 
 
 void MDC1200_reset_rx(void) {
