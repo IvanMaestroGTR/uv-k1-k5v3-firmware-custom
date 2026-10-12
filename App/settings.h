@@ -154,9 +154,6 @@ enum ROGER_Mode_t {
     ROGER_MODE_MDC_PRE,
     ROGER_MODE_MDC_POST,
     ROGER_MODE_MDC_BOTH,
-    ROGER_MODE_FLEETSYNC_PRE,
-    ROGER_MODE_FLEETSYNC_POST,
-    ROGER_MODE_FLEETSYNC_BOTH
 };
 typedef enum ROGER_Mode_t ROGER_Mode_t;
 
@@ -239,8 +236,6 @@ typedef struct {
     POWER_OnDisplayMode_t POWER_ON_DISPLAY_MODE;
     ROGER_Mode_t          ROGER;
     uint16_t              MDC1200_ID;
-    uint16_t              FLEETSYNC_FLEET;
-    uint16_t              FLEETSYNC_UNIT;
     uint8_t               REPEATER_TAIL_TONE_ELIMINATION;
     uint8_t               KEY_1_SHORT_PRESS_ACTION;
     uint8_t               KEY_1_LONG_PRESS_ACTION;
