@@ -108,9 +108,9 @@ const t_menu_item MenuList[] =
 #ifdef ENABLE_VOICE
     {"Voice",       MENU_VOICE         },
 #endif
-    {"Signalling",  MENU_ROGER         },
+    {"Signal",      MENU_ROGER         },
     {"MDC ID",      MENU_MDC_ID        },
-    {"FS Fleet",    MENU_FS_FLEET      },
+    {"FSFleet",     MENU_FS_FLEET      },
     {"FS Unit",     MENU_FS_UNIT       },
     {"STE",         MENU_STE           },
     {"RP STE",      MENU_RP_STE        },
