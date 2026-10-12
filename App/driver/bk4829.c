@@ -1827,6 +1827,23 @@ void BK4819_SendFSKData(uint16_t *pData, uint8_t words)
     BK4819_ResetFSK();
 }
 
+void BK4819_PrepareSignallingReceive(void)
+{
+    const bool fleetsync = gEeprom.ROGER >= ROGER_MODE_FLEETSYNC_PRE;
+    const uint16_t rx_cfg = 0x1008u; /* FSK RX enable + 4-byte sync mode */
+
+    BK4819_WriteRegister(BK4819_REG_58, 0x37C3);
+    BK4819_WriteRegister(BK4819_REG_72, 0x3065);
+    BK4819_WriteRegister(BK4819_REG_70, 0x00C3);
+    BK4819_WriteRegister(BK4819_REG_5A, fleetsync ? 0xAAAAu : 0x7240u);
+    BK4819_WriteRegister(BK4819_REG_5B, fleetsync ? 0x23EBu : 0x99A7u);
+    BK4819_WriteRegister(BK4819_REG_5C, 0x5625u);
+    BK4819_WriteRegister(BK4819_REG_5D, fleetsync ? 0x0700u : 0x0D00u);
+    BK4819_WriteRegister(BK4819_REG_5E, 0x0021u); /* FIFO threshold: 4 words */
+    BK4819_WriteRegister(BK4819_REG_59, 0xC008u); /* clear TX/RX FIFO */
+    BK4819_WriteRegister(BK4819_REG_59, rx_cfg);
+}
+
 void BK4819_PrepareFSKReceive(void)
 {
     BK4819_ResetFSK();
