@@ -1093,16 +1093,6 @@ void SETTINGS_SaveSettings(void)
     State[3] = gEeprom.TX_VFO;
     State[4] = gEeprom.BATTERY_TYPE;
 
-    /* Preserve the neighbouring reserved bytes while storing signalling IDs. */
-    State = SecBuf + 0x20;
-    State[0] = (uint8_t)(gEeprom.MDC1200_ID & 0xFFu);
-    State[1] = (uint8_t)(gEeprom.MDC1200_ID >> 8);
-    State[2] = (uint8_t)(gEeprom.FLEETSYNC_FLEET & 0xFFu);
-    State[3] = (uint8_t)(gEeprom.FLEETSYNC_FLEET >> 8);
-    State[4] = (uint8_t)(gEeprom.FLEETSYNC_UNIT & 0xFFu);
-    State[5] = (uint8_t)(gEeprom.FLEETSYNC_UNIT >> 8);
-    State[6] = 0xA7u; /* Signalling settings format marker */
-
     // 0x0ED0
     State = SecBuf + 0x40;
     State[0] = gEeprom.DTMF_SIDE_TONE;
