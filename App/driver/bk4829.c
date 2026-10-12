@@ -1100,6 +1100,76 @@ void BK4819_PlaySingleTone(const unsigned int tone_Hz, const unsigned int delay,
     BK4819_ExitTxMute();
 }
 
+/*
+ * Talk-permit tone sequencer for TrueMDC signalling integration.
+ * This stage adds the hardware sequence engine only; PTT/settings integration
+ * is deliberately kept separate until the signalling state machine is ported.
+ */
+void BK4819_PlayTalkPermitToneTx(uint8_t mode, bool play_speaker)
+{
+    static const uint16_t xts_frequencies[] = {910, 0, 910, 0, 910};
+    static const uint16_t xts_durations[]   = {100, 20, 30, 20, 60};
+    static const uint16_t trbo_frequencies[] = {1570, 1050, 1570, 1317};
+    static const uint16_t trbo_durations[]  = {100, 40, 40, 40};
+    static const uint16_t kenwood_frequencies[] = {1215, 1629, 1215, 1629};
+    static const uint16_t kenwood_durations[]   = {100, 30, 30, 30};
+    const uint16_t *frequencies;
+    const uint16_t *durations;
+    unsigned int count;
+
+    switch (mode) {
+    case BK4819_TPT_XTS:
+        frequencies = xts_frequencies;
+        durations = xts_durations;
+        count = sizeof(xts_frequencies) / sizeof(xts_frequencies[0]);
+        break;
+    case BK4819_TPT_TRBO:
+        frequencies = trbo_frequencies;
+        durations = trbo_durations;
+        count = sizeof(trbo_frequencies) / sizeof(trbo_frequencies[0]);
+        break;
+    case BK4819_TPT_KENWOOD:
+        frequencies = kenwood_frequencies;
+        durations = kenwood_durations;
+        count = sizeof(kenwood_frequencies) / sizeof(kenwood_frequencies[0]);
+        break;
+    case BK4819_TPT_OFF:
+    default:
+        return;
+    }
+
+    BK4819_EnterTxMute();
+    if (play_speaker) {
+        AUDIO_AudioPathOn();
+        BK4819_SetAF(BK4819_AF_BEEP);
+        BK4819_Enable_AfDac_DiscMode_TxDsp();
+    } else {
+        AUDIO_AudioPathOff();
+        BK4819_SetAF(BK4819_AF_MUTE);
+        BK4819_EnableTXLink();
+    }
+    SYSTEM_DelayMs(1);
+
+    for (unsigned int i = 0; i < count; i++) {
+        if (frequencies[i] == 0) {
+            BK4819_WriteRegister(BK4819_REG_70, 0);
+        } else {
+            BK4819_WriteRegister(BK4819_REG_70,
+                BK4819_REG_70_ENABLE_TONE1 | (55u << BK4819_REG_70_SHIFT_TONE1_TUNING_GAIN));
+            BK4819_WriteRegister(BK4819_REG_71, scale_freq(frequencies[i]));
+        }
+        BK4819_ExitTxMute();
+        SYSTEM_DelayMs(durations[i]);
+        BK4819_EnterTxMute();
+        BK4819_WriteRegister(BK4819_REG_70, 0);
+    }
+
+    BK4819_SetAF(BK4819_AF_MUTE);
+    BK4819_TxOn_Beep();
+    SYSTEM_DelayMs(1);
+    BK4819_ExitTxMute();
+}
+
 void BK4819_EnterTxMute(void)
 {
     BK4819_WriteRegister(BK4819_REG_50, 0xBB18);
