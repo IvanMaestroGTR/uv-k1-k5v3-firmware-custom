@@ -161,6 +161,11 @@ enable_feature(ENABLE_FLASHLIGHT
 enable_feature(ENABLE_SPECTRUM
     app/spectrum.c
 )
+enable_feature(ENABLE_MDC1200
+    app/mdc1200.c
+    app/mdc1200_app.c
+    app/tpt.c
+)
 enable_feature(ENABLE_BIG_FREQ)
 enable_feature(ENABLE_SMALL_BOLD)
 enable_feature(ENABLE_CUSTOM_MENU_LAYOUT)

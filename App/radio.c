@@ -38,6 +38,9 @@
 #include "helper/battery.h"
 #include "misc.h"
 #include "radio.h"
+#ifdef ENABLE_MDC1200
+    #include "app/mdc1200.h"
+#endif
 #include "settings.h"
 #include "ui/menu.h"
 
@@ -1368,16 +1371,15 @@ void RADIO_SendCssTail(void)
 
 void RADIO_SendEndOfTransmission(void)
 {
-    BK4819_FilterBandwidth_t Bandwidth = gCurrentVfo->CHANNEL_BANDWIDTH;
+#ifdef ENABLE_MDC1200
+    if (gEeprom.MDC1200_TX_MODE == MDC1200_TX_POST ||
+        gEeprom.MDC1200_TX_MODE == MDC1200_TX_BOTH) {
+        MDC1200_Send(MDC1200_OP_PTT_ID, MDC1200_ARG_POST_ID,
+                     gEeprom.MDC1200_ID, gEeprom.MDC1200_PREAMBLE,
+                     gEeprom.MDC1200_TONE_MODE);
+    }
+#endif
 
-    #ifdef ENABLE_FEAT_F4HWN_NARROWER
-        if(Bandwidth == BK4819_FILTER_BW_NARROW && gSetting_set_nfm == 1)
-        {
-            Bandwidth = BK4819_FILTER_BW_NARROWER;
-        }
-    #endif
-
-    BK4819_PlayRoger(Bandwidth);
     DTMF_SendEndOfTransmission();
 
     // send the CTCSS/DCS tail tone - allows the receivers to mute the usual FM squelch tail/crash

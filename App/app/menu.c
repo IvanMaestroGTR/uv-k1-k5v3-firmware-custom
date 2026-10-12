@@ -312,10 +312,31 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
                 break;
         #endif
 
-        case MENU_ROGER:
+        case MENU_RX_LED:
             //*pMin = 0;
-            *pMax = ARRAY_SIZE(gSubMenu_ROGER) - 1;
+            *pMax = ARRAY_SIZE(gSubMenu_RX_LED) - 1;
             break;
+
+#ifdef ENABLE_MDC1200
+        case MENU_MDC_ID:
+            *pMax = 0xFFFF;
+            break;
+        case MENU_MDC_TX:
+            *pMax = ARRAY_SIZE(gSubMenu_MDC_TX) - 1;
+            break;
+        case MENU_MDC_RX:
+            *pMax = 1;
+            break;
+        case MENU_MDC_MOD:
+            *pMax = ARRAY_SIZE(gSubMenu_MDC_MOD) - 1;
+            break;
+        case MENU_MDC_PRE:
+            *pMax = 8;
+            break;
+        case MENU_TPT:
+            *pMax = ARRAY_SIZE(gSubMenu_TPT) - 1;
+            break;
+#endif
 
         case MENU_PONMSG:
             //*pMin = 0;
@@ -832,9 +853,31 @@ void MENU_AcceptSetting(void)
             gEeprom.POWER_ON_DISPLAY_MODE = gSubMenuSelection;
             break;
 
-        case MENU_ROGER:
-            gEeprom.ROGER = gSubMenuSelection;
+        case MENU_RX_LED:
+            gEeprom.RX_LIGHT_MODE = (RX_LightMode_t)gSubMenuSelection;
             break;
+
+#ifdef ENABLE_MDC1200
+        case MENU_MDC_ID:
+            gEeprom.MDC1200_ID = (uint16_t)gSubMenuSelection;
+            break;
+        case MENU_MDC_TX:
+            gEeprom.MDC1200_TX_MODE = gSubMenuSelection;
+            break;
+        case MENU_MDC_RX:
+            gEeprom.MDC1200_RX_ENABLE = gSubMenuSelection != 0;
+            gFlagReconfigureVfos = true;
+            break;
+        case MENU_MDC_MOD:
+            gEeprom.MDC1200_TONE_MODE = (MDC1200_ToneMode_t)gSubMenuSelection;
+            break;
+        case MENU_MDC_PRE:
+            gEeprom.MDC1200_PREAMBLE = (uint8_t)gSubMenuSelection;
+            break;
+        case MENU_TPT:
+            gEeprom.TALK_PERMIT_TONE = gSubMenuSelection;
+            break;
+#endif
 
         case MENU_AM:
             gTxVfo->Modulation     = gSubMenuSelection;
@@ -1233,9 +1276,30 @@ void MENU_ShowCurrentSetting(void)
             gSubMenuSelection = gEeprom.POWER_ON_DISPLAY_MODE;
             break;
 
-        case MENU_ROGER:
-            gSubMenuSelection = gEeprom.ROGER;
+        case MENU_RX_LED:
+            gSubMenuSelection = gEeprom.RX_LIGHT_MODE;
             break;
+
+#ifdef ENABLE_MDC1200
+        case MENU_MDC_ID:
+            gSubMenuSelection = gEeprom.MDC1200_ID;
+            break;
+        case MENU_MDC_TX:
+            gSubMenuSelection = gEeprom.MDC1200_TX_MODE;
+            break;
+        case MENU_MDC_RX:
+            gSubMenuSelection = gEeprom.MDC1200_RX_ENABLE;
+            break;
+        case MENU_MDC_MOD:
+            gSubMenuSelection = gEeprom.MDC1200_TONE_MODE;
+            break;
+        case MENU_MDC_PRE:
+            gSubMenuSelection = gEeprom.MDC1200_PREAMBLE;
+            break;
+        case MENU_TPT:
+            gSubMenuSelection = gEeprom.TALK_PERMIT_TONE;
+            break;
+#endif
 
         case MENU_AM:
             gSubMenuSelection = gTxVfo->Modulation;
@@ -1387,6 +1451,28 @@ static void MENU_Key_0_to_9(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
         return;
 
     gBeepToPlay = BEEP_1KHZ_60MS_OPTIONAL;
+
+#ifdef ENABLE_MDC1200
+    /* MDC unit IDs are conventionally written as four hexadecimal digits.
+     * The generic numeric editor is decimal and only allocates three digits
+     * for this menu, so keep a dedicated four-nibble input path. */
+    if (UI_MENU_GetCurrentMenuId() == MENU_MDC_ID && gIsInSubMenu)
+    {
+        if (bKeyHeld)
+            return;
+        if (gInputBoxIndex >= 4)
+            gInputBoxIndex = 0;
+        gInputBox[gInputBoxIndex++] = (char)(Key - KEY_0);
+        if (gInputBoxIndex == 4)
+            gSubMenuSelection =
+                ((uint16_t)gInputBox[0] << 12) |
+                ((uint16_t)gInputBox[1] << 8)  |
+                ((uint16_t)gInputBox[2] << 4)  |
+                (uint16_t)gInputBox[3];
+        gRequestDisplayScreen = DISPLAY_MENU;
+        return;
+    }
+#endif
 
     if (gScanMixEditorActive)
     {
@@ -1918,6 +2004,14 @@ static void MENU_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
     {
         const int m = UI_MENU_GetCurrentMenuId();
 
+#ifdef ENABLE_MDC1200
+        if (m == MENU_MDC_ID && gInputBoxIndex > 0 && gInputBoxIndex < 4)
+        {
+            gBeepToPlay = BEEP_500HZ_60MS_DOUBLE_BEEP_OPTIONAL;
+            return;
+        }
+#endif
+
         if (m == MENU_RESET  ||
             m == MENU_MEM_CH ||
             m == MENU_DEL_CH ||
@@ -2025,6 +2119,37 @@ static void MENU_Key_STAR(const bool bKeyPressed, const bool bKeyHeld)
         return;
 
     gBeepToPlay = BEEP_1KHZ_60MS_OPTIONAL;
+
+#ifdef ENABLE_MDC1200
+    if (UI_MENU_GetCurrentMenuId() == MENU_MDC_ID && gIsInSubMenu)
+    {
+        if (bKeyHeld)
+            return;
+
+        /* STAR enters A; repeated STAR presses cycle the last nibble A..F.
+         * Example A704: STAR, 7, 0, 4.  Example F123: STAR x6, 1, 2, 3. */
+        if (gInputBoxIndex > 0 && gInputBox[gInputBoxIndex - 1] >= 10 &&
+            gInputBox[gInputBoxIndex - 1] < 15)
+        {
+            gInputBox[gInputBoxIndex - 1]++;
+        }
+        else
+        {
+            if (gInputBoxIndex >= 4)
+                gInputBoxIndex = 0;
+            gInputBox[gInputBoxIndex++] = 10;
+        }
+
+        if (gInputBoxIndex == 4)
+            gSubMenuSelection =
+                ((uint16_t)gInputBox[0] << 12) |
+                ((uint16_t)gInputBox[1] << 8)  |
+                ((uint16_t)gInputBox[2] << 4)  |
+                (uint16_t)gInputBox[3];
+        gRequestDisplayScreen = DISPLAY_MENU;
+        return;
+    }
+#endif
 
     if (UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME && edit_index >= 0)
     {   // currently editing the channel name

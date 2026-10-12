@@ -155,6 +155,36 @@ enum ROGER_Mode_t {
 };
 typedef enum ROGER_Mode_t ROGER_Mode_t;
 
+typedef enum {
+    RX_LIGHT_MODE_OFF = 0,
+    RX_LIGHT_MODE_SOLID,
+    RX_LIGHT_MODE_BLINK,
+} RX_LightMode_t;
+
+#ifdef ENABLE_MDC1200
+enum MDC1200_TxMode_t {
+    MDC1200_TX_OFF = 0,
+    MDC1200_TX_PRE,
+    MDC1200_TX_POST,
+    MDC1200_TX_BOTH
+};
+typedef enum MDC1200_TxMode_t MDC1200_TxMode_t;
+
+typedef enum {
+    MDC1200_TONE_CLASSIC = 0,
+    MDC1200_TONE_RAIL,
+} MDC1200_ToneMode_t;
+
+enum TPT_Mode_t {
+    TPT_MODE_OFF = 0,
+    TPT_MODE_XTS,
+    TPT_MODE_TRBO,
+    TPT_MODE_KENWOOD,
+    TPT_MODE_AUTO
+};
+typedef enum TPT_Mode_t TPT_Mode_t;
+#endif
+
 enum CHANNEL_DisplayMode_t {
     MDF_FREQUENCY = 0,
     MDF_CHANNEL,
@@ -233,6 +263,15 @@ typedef struct {
     uint8_t               AUTO_KEYPAD_LOCK;
     POWER_OnDisplayMode_t POWER_ON_DISPLAY_MODE;
     ROGER_Mode_t          ROGER;
+    RX_LightMode_t        RX_LIGHT_MODE;
+#ifdef ENABLE_MDC1200
+    uint16_t              MDC1200_ID;
+    MDC1200_TxMode_t      MDC1200_TX_MODE;
+    bool                  MDC1200_RX_ENABLE;
+    uint8_t               MDC1200_PREAMBLE;
+    MDC1200_ToneMode_t    MDC1200_TONE_MODE;
+    TPT_Mode_t            TALK_PERMIT_TONE;
+#endif
     uint8_t               REPEATER_TAIL_TONE_ELIMINATION;
     uint8_t               KEY_1_SHORT_PRESS_ACTION;
     uint8_t               KEY_1_LONG_PRESS_ACTION;

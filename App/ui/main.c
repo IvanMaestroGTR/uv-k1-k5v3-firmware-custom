@@ -23,6 +23,9 @@
 #endif
 #include "app/chFrScanner.h"
 #include "app/dtmf.h"
+#ifdef ENABLE_MDC1200
+    #include "app/mdc1200.h"
+#endif
 
 #ifdef ENABLE_FEAT_F4HWN_BEAM
     #include "app/beam.h"
@@ -793,7 +796,6 @@ void UI_DisplayAudioBar(void)
 #ifdef ENABLE_FEAT_F4HWN
         RxBlinkLed = 0;
         RxBlinkLedCounter = 0;
-        BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, false);
         unsigned int line;
         if (isMainOnly())
         {
@@ -970,7 +972,6 @@ void UI_DisplayAudioScope(void)
 #ifdef ENABLE_FEAT_F4HWN
     RxBlinkLed = 0;
     RxBlinkLedCounter = 0;
-    BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, false);
 #endif
     UI_DisplayAudioScopeOverlay((uint8_t)line, true);
     ST7565_BlitLine(line);
@@ -1262,18 +1263,10 @@ void UI_MAIN_TimeSlice500ms(void)
             {
                 if(RxBlinkLedCounter % 2 == 0)
                 {
-                    if(gSetting_set_eot > 1 )
-                    {
-                        BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, false);
-                    }
+                    /* Status LED ownership is centralized in app.c. */
                 }
                 else
                 {
-                    if(gSetting_set_eot > 1 )
-                    {
-                        BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, true);
-                    }
-
                     if(gSetting_set_eot == 1 || gSetting_set_eot == 3)
                     {
                         switch(RxBlinkLedCounter)
@@ -2462,6 +2455,17 @@ void UI_DisplayMain(void)
         else
 #endif
 
+#ifdef ENABLE_MDC1200
+        if (gMdc1200RxDisplayTicks > 0 && gKeypadLocked == 0) {
+            center_line = CENTER_LINE_MDC1200;
+            strcpy(String, "MDC ");
+            MDC1200_FormatUnitId(String + 4, gMdc1200LastUnitId);
+            UI_PrintStringSmallNormal(String, 2, 0,
+                (gEeprom.DUAL_WATCH == DUAL_WATCH_OFF &&
+                 gEeprom.CROSS_BAND_RX_TX == CROSS_BAND_OFF) ? 5 : 3);
+        }
+        else
+#endif
 #ifdef ENABLE_RSSI_BAR
         if (rx) {
             center_line = CENTER_LINE_RSSI;

@@ -21,6 +21,9 @@
     #include "app/fm.h"
 #endif
 #include "board.h"
+#ifdef ENABLE_MDC1200
+    #include "app/mdc1200.h"
+#endif
 #include "py32f071_ll_bus.h"
 #include "py32f071_ll_gpio.h"
 #include "py32f071_ll_rcc.h"
@@ -173,12 +176,23 @@ void BOARD_ADC_Init(void)
 
 void BOARD_ADC_GetBatteryInfo(uint16_t *pVoltage, uint16_t *pCurrent)
 {
+    static uint16_t lastVoltage;
+#ifdef ENABLE_MDC1200
+    /* ADC1 is externally triggered by TIM3 while the MDC demodulator runs.
+     * Starting a software conversion in that state would wait forever. */
+    if (MDC1200_AppRxSampling()) {
+        *pVoltage = lastVoltage;
+        *pCurrent = 0;
+        return;
+    }
+#endif
     LL_ADC_REG_StartConversionSWStart(ADC1);
     while (!LL_ADC_IsActiveFlag_EOS(ADC1))
         ;
     LL_ADC_ClearFlag_JEOS(ADC1);
 
     *pVoltage = LL_ADC_REG_ReadConversionData12(ADC1);
+    lastVoltage = *pVoltage;
     *pCurrent = 0;
 }
 

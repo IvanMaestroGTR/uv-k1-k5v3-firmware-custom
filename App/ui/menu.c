@@ -21,6 +21,9 @@
 #include "../app/action.h"
 #include "../app/dtmf.h"
 #include "../app/menu.h"
+#ifdef ENABLE_MDC1200
+    #include "../app/mdc1200.h"
+#endif
 #include "../bitmaps.h"
 #include "../board.h"
 #include "../dcs.h"
@@ -108,7 +111,15 @@ const t_menu_item MenuList[] =
 #ifdef ENABLE_VOICE
     {"Voice",       MENU_VOICE         },
 #endif
-    {"Roger",       MENU_ROGER         },
+    {"RxLED",       MENU_RX_LED        },
+#ifdef ENABLE_MDC1200
+    {"MDCID",       MENU_MDC_ID        },
+    {"MDCTx",       MENU_MDC_TX        },
+    {"MDCRx",       MENU_MDC_RX        },
+    {"MDCMod",      MENU_MDC_MOD       },
+    {"MDCPre",      MENU_MDC_PRE       },
+    {"TPT",         MENU_TPT           },
+#endif
     {"STE",         MENU_STE           },
     {"RP STE",      MENU_RP_STE        },
     {"1 Call",      MENU_1_CALL        },
@@ -308,12 +319,37 @@ const char* const gSubMenu_SET_SAV[] =
 };
 #endif
 
-const char* const gSubMenu_ROGER[] =
+const char* const gSubMenu_RX_LED[] =
 {
     "OFF",
-    "ROGER",
-    "MDC"
+    "SOLID",
+    "BLINK"
 };
+
+#ifdef ENABLE_MDC1200
+const char* const gSubMenu_MDC_TX[] =
+{
+    "OFF",
+    "PRE",
+    "POST",
+    "PRE+POST"
+};
+
+const char* const gSubMenu_MDC_MOD[] =
+{
+    "MDC",
+    "RAIL"
+};
+
+const char* const gSubMenu_TPT[] =
+{
+    "OFF",
+    "XTS",
+    "TRBO",
+    "KENWOOD",
+    "AUTO"
+};
+#endif
 
 const char* const gSubMenu_RESET[] =
 {
@@ -625,7 +661,15 @@ static const uint8_t CatAudio[]   = {
     MENU_SET_AUD,
 #endif
 };
-static const uint8_t CatRadio[]   = { MENU_SQL, MENU_STE, MENU_RP_STE, MENU_ROGER, MENU_VOX, MENU_TDR };
+static const uint8_t CatRadio[]   = { MENU_SQL, MENU_STE, MENU_RP_STE, MENU_RX_LED,
+#ifdef ENABLE_MDC1200
+    MENU_MDC_ID, MENU_MDC_TX,
+    MENU_MDC_RX,
+    MENU_MDC_MOD,
+    MENU_MDC_PRE,
+    MENU_TPT,
+#endif
+    MENU_VOX, MENU_TDR };
 static const uint8_t CatDtmf[]    = { MENU_UPCODE, MENU_DWCODE, MENU_D_ST, MENU_D_PRE, MENU_D_LIVE_DEC };
 static const uint8_t CatService[] = { MENU_F_LOCK, MENU_350EN, MENU_BATCAL, MENU_BATTYP, MENU_SET_NAV, MENU_RESET };
 
@@ -1459,9 +1503,51 @@ void UI_DisplayMenu(void)
             choiceTable = gSubMenu_PONMSG;
             goto copy_menu_choice;
 
-        case MENU_ROGER:
-            choiceTable = gSubMenu_ROGER;
+        case MENU_RX_LED:
+            choiceTable = gSubMenu_RX_LED;
             goto copy_menu_choice;
+
+#ifdef ENABLE_MDC1200
+        case MENU_MDC_ID:
+            if (gIsInSubMenu && gInputBoxIndex > 0)
+            {
+                for (unsigned int n = 0; n < 4; ++n)
+                {
+                    if (n >= gInputBoxIndex)
+                        String[n] = '-';
+                    else if (gInputBox[n] < 10)
+                        String[n] = (char)('0' + gInputBox[n]);
+                    else
+                        String[n] = (char)('A' + gInputBox[n] - 10);
+                }
+                String[4] = '\0';
+            }
+            else
+            {
+                MDC1200_FormatUnitId(String, (uint16_t)gSubMenuSelection);
+            }
+            break;
+
+        case MENU_MDC_TX:
+            choiceTable = gSubMenu_MDC_TX;
+            goto copy_menu_choice;
+
+        case MENU_MDC_RX:
+            choiceTable = gSubMenu_OFF_ON;
+            goto copy_menu_choice;
+
+        case MENU_MDC_MOD:
+            choiceTable = gSubMenu_MDC_MOD;
+            goto copy_menu_choice;
+
+        case MENU_MDC_PRE:
+            sprintf(String, "%u CYCLE", (unsigned int)gSubMenuSelection);
+            break;
+
+        case MENU_TPT:
+            choiceTable = gSubMenu_TPT;
+            goto copy_menu_choice;
+#endif
 
         case MENU_VOL: {
             // SysInf is paginated. Pages appear in this order, only when their

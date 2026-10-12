@@ -44,6 +44,9 @@
 
 #include "app/app.h"
 #include "app/dtmf.h"
+#ifdef ENABLE_MDC1200
+    #include "app/mdc1200.h"
+#endif
 
 #include "driver/backlight.h"
 #include "driver/bk4819.h"
@@ -118,6 +121,10 @@ void Main(void)
     SETTINGS_InitEEPROM(false);
 #else
     SETTINGS_InitEEPROM();
+#endif
+
+#ifdef ENABLE_MDC1200
+    MDC1200_Init();
 #endif
 
 #ifdef ENABLE_FEAT_F4HWN_RXTX_LOG
