@@ -30,7 +30,6 @@
 #include "app/chFrScanner.h"
 #include "app/dtmf.h"
 #include "app/mdc1200.h"
-#include "app/fleetsync.h"
 #ifdef ENABLE_FLASHLIGHT
     #include "app/flashlight.h"
 #endif
@@ -71,8 +70,6 @@ volatile uint8_t  gSignallingLastProtocol;
 volatile uint8_t  gSignallingLastOpcode;
 volatile uint8_t  gSignallingLastArgument;
 volatile uint16_t gSignallingLastMDCID;
-volatile uint16_t gSignallingLastFleet;
-volatile uint16_t gSignallingLastUnit;
 
 static bool     gSignallingRxActive;
 static uint8_t  gSignallingRxBuffer[14];
@@ -1173,8 +1170,7 @@ static void CheckRadioInterrupts(void)
             if (interrupts.fskRxSync) {
                 gSignallingRxActive = true;
                 gSignallingRxBytes = 0;
-                gSignallingRxExpectedBytes =
-                    (gEeprom.ROGER >= ROGER_MODE_FLEETSYNC_PRE) ? 8u : 14u;
+                gSignallingRxExpectedBytes = 14u;
             }
 
             if (gSignallingRxActive &&
@@ -1192,18 +1188,7 @@ static void CheckRadioInterrupts(void)
                 }
 
                 if (interrupts.fskRxFinied) {
-                    if (gEeprom.ROGER >= ROGER_MODE_FLEETSYNC_PRE) {
-                        uint8_t packet[FLEETSYNC_PACKET_SIZE] = {0xAA, 0xAA, 0x23, 0xEB};
-                        uint16_t fleet = 0, unit = 0;
-                        memcpy(packet + 4, gSignallingRxBuffer, 8u);
-                        if (FleetSync_decode_ani(packet, &fleet, &unit)) {
-                            gSignallingLastProtocol = 2u;
-                            gSignallingLastFleet = fleet;
-                            gSignallingLastUnit = unit;
-                            gUpdateDisplay = true;
-                        }
-                    } else {
-                        /* Hardware sync detector strips the sync bytes from the FIFO;
+                                            /* Hardware sync detector strips the sync bytes from the FIFO;
                            restore the known MDC sync sequence for the software decoder. */
                         uint8_t packet[19] = {0xFB, 0x72, 0x40, 0x99, 0xA7};
                         uint8_t op = 0, arg = 0;
