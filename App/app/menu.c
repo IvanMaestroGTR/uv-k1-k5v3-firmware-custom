@@ -1511,6 +1511,28 @@ static void MENU_Key_0_to_9(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
     if (bKeyHeld)
         return;
 
+    const int currentMenu = UI_MENU_GetCurrentMenuId();
+    if (gIsInSubMenu && edit_index >= 0 && currentMenu == MENU_MDC_ID) {
+        if (edit_index < 4) {
+            edit[edit_index] = (char)('0' + (Key - KEY_0));
+            ++edit_index;
+            gRequestDisplayScreen = DISPLAY_MENU;
+        }
+        return;
+    }
+    if (gIsInSubMenu && edit_index >= 0 && currentMenu == MENU_FS_FLEET) {
+        if (edit_index < 8) {
+            edit[edit_index] = (char)('0' + (Key - KEY_0));
+            ++edit_index;
+            if (edit_index == 3) ++edit_index;
+            gRequestDisplayScreen = DISPLAY_MENU;
+        }
+        return;
+    }
+
+    if (bKeyHeld)
+        return;
+
     INPUTBOX_Append(Key);
 
     gRequestDisplayScreen = DISPLAY_MENU;
@@ -1728,6 +1750,17 @@ static void MENU_Key_0_to_9(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 
 static void MENU_Key_EXIT(bool bKeyPressed, bool bKeyHeld)
 {
+    if (gIsInSubMenu && edit_index > 0 &&
+        (UI_MENU_GetCurrentMenuId() == MENU_MDC_ID || UI_MENU_GetCurrentMenuId() == MENU_FS_FLEET) &&
+        bKeyPressed && !bKeyHeld) {
+        if (edit_index == 4 && UI_MENU_GetCurrentMenuId() == MENU_FS_FLEET)
+            edit_index = 2;
+        else
+            --edit_index;
+        gRequestDisplayScreen = DISPLAY_MENU;
+        return;
+    }
+
     if (gScanMixEditorActive)
     {
         if (bKeyHeld || !bKeyPressed)
@@ -1935,7 +1968,27 @@ static void MENU_Key_MENU(const bool bKeyPressed, const bool bKeyHeld)
             edit_index          = -1;
         }
 
+        if (m == MENU_MDC_ID) {
+            snprintf(edit, sizeof(edit), "%04X", (unsigned)gEeprom.MDC1200_ID);
+            edit_index = 0;
+        } else if (m == MENU_FS_FLEET) {
+            snprintf(edit, sizeof(edit), "%03u\n%04u",
+                     (unsigned)gEeprom.FLEETSYNC_FLEET, (unsigned)gEeprom.FLEETSYNC_UNIT);
+            edit_index = 0;
+        }
+
         return;
+    }
+
+    if (UI_MENU_GetCurrentMenuId() == MENU_MDC_ID && edit_index >= 0 && edit_index < 4) {
+        if (++edit_index < 4)
+            return;
+    }
+    if (UI_MENU_GetCurrentMenuId() == MENU_FS_FLEET && edit_index >= 0 && edit_index < 8) {
+        if (++edit_index == 3)
+            ++edit_index;
+        if (edit_index < 8)
+            return;
     }
 
     if (UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME)
@@ -2196,6 +2249,20 @@ static void MENU_Key_UP_DOWN(bool bKeyPressed, bool bKeyHeld, int8_t Direction)
     if (!gEeprom.SET_NAV && gIsInSubMenu) {
         Direction = -Direction;
     }
+
+    if (gIsInSubMenu && edit_index >= 0 && UI_MENU_GetCurrentMenuId() == MENU_MDC_ID) {
+        if (edit_index < 4) {
+            char c = (char)(edit[edit_index] + Direction);
+            if (c < '0') c = 'F';
+            else if (c > 'F') c = '0';
+            else if (c > '9' && c < 'A') c = (Direction > 0) ? 'A' : '9';
+            edit[edit_index] = c;
+            gRequestDisplayScreen = DISPLAY_MENU;
+        }
+        return;
+    }
+    if (gIsInSubMenu && edit_index >= 0 && UI_MENU_GetCurrentMenuId() == MENU_FS_FLEET)
+        return;
 
     if (UI_MENU_GetCurrentMenuId() == MENU_MEM_NAME && gIsInSubMenu && edit_index >= 0)
     {   // change the character
