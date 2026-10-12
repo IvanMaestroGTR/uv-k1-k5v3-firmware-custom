@@ -849,16 +849,31 @@ void MENU_AcceptSetting(void)
             gEeprom.ROGER = gSubMenuSelection;
             break;
 
-        case MENU_MDC_ID:
-            gEeprom.MDC1200_ID = gSubMenuSelection;
+        case MENU_MDC_ID: {
+            uint16_t value = 0;
+            for (unsigned int i = 0; i < 4 && edit[i] != '\0'; i++) {
+                const char c = edit[i];
+                value = (uint16_t)(value << 4);
+                if (c >= '0' && c <= '9') value |= (uint16_t)(c - '0');
+                else if (c >= 'A' && c <= 'F') value |= (uint16_t)(c - 'A' + 10);
+                else if (c >= 'a' && c <= 'f') value |= (uint16_t)(c - 'a' + 10);
+            }
+            gEeprom.MDC1200_ID = value;
             break;
+        }
 
         case MENU_FS_FLEET:
-            gEeprom.FLEETSYNC_FLEET = gSubMenuSelection;
-            break;
-
-        case MENU_FS_UNIT:
-            gEeprom.FLEETSYNC_UNIT = gSubMenuSelection;
+            gEeprom.FLEETSYNC_FLEET = (uint16_t)((edit[0] - '0') * 100u +
+                                                 (edit[1] - '0') * 10u +
+                                                 (edit[2] - '0'));
+            gEeprom.FLEETSYNC_UNIT = (uint16_t)((edit[4] - '0') * 1000u +
+                                                (edit[5] - '0') * 100u +
+                                                (edit[6] - '0') * 10u +
+                                                (edit[7] - '0'));
+            if (gEeprom.FLEETSYNC_FLEET < 100u) gEeprom.FLEETSYNC_FLEET = 100u;
+            else if (gEeprom.FLEETSYNC_FLEET > 349u) gEeprom.FLEETSYNC_FLEET = 349u;
+            if (gEeprom.FLEETSYNC_UNIT < 1000u) gEeprom.FLEETSYNC_UNIT = 1000u;
+            else if (gEeprom.FLEETSYNC_UNIT > 4999u) gEeprom.FLEETSYNC_UNIT = 4999u;
             break;
 
         case MENU_RX_ID:
