@@ -302,8 +302,8 @@ endif()
 # inspect its relocations while the rest of a flash-constrained build uses LTO.
 if(ENABLE_LTO AND ENABLE_FEAT_F4HWN_MULTIBOOT_OVERLAY)
     set_source_files_properties(
-        "${CMAKE_CURRENT_SOURCE_DIR}/driver/mb_flash.c"
-        PROPERTIES COMPILE_OPTIONS "-fno-lto"
+        driver/mb_flash.c
+        PROPERTIES COMPILE_FLAGS "-fno-lto"
     )
 endif()
 
