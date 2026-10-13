@@ -186,9 +186,14 @@ void FUNCTION_Transmit()
 #ifdef ENABLE_MDC1200
     if (gEeprom.MDC1200_TX_MODE == MDC1200_TX_PRE ||
         gEeprom.MDC1200_TX_MODE == MDC1200_TX_BOTH) {
-        MDC1200_Send(MDC1200_OP_PTT_ID, MDC1200_ARG_PRE_ID,
-                     gEeprom.MDC1200_ID, gEeprom.MDC1200_PREAMBLE,
-                     gEeprom.MDC1200_TONE_MODE);
+        /* Let the far radio's carrier detector and squelch open before the
+         * first symbol. Without this lead-in most receivers only reproduce
+         * the very end of the pre-ID burst. */
+        SYSTEM_DelayMs(200);
+        MDC1200_SendRepeated(MDC1200_OP_PTT_ID, MDC1200_ARG_PRE_ID,
+                             gEeprom.MDC1200_ID, gEeprom.MDC1200_PREAMBLE,
+                             gEeprom.MDC1200_TONE_MODE,
+                             gEeprom.MDC1200_REPEAT);
     }
 
     if (gEeprom.TALK_PERMIT_TONE != TPT_MODE_OFF)

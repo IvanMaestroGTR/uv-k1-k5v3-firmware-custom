@@ -1374,9 +1374,10 @@ void RADIO_SendEndOfTransmission(void)
 #ifdef ENABLE_MDC1200
     if (gEeprom.MDC1200_TX_MODE == MDC1200_TX_POST ||
         gEeprom.MDC1200_TX_MODE == MDC1200_TX_BOTH) {
-        MDC1200_Send(MDC1200_OP_PTT_ID, MDC1200_ARG_POST_ID,
-                     gEeprom.MDC1200_ID, gEeprom.MDC1200_PREAMBLE,
-                     gEeprom.MDC1200_TONE_MODE);
+        MDC1200_SendRepeated(MDC1200_OP_PTT_ID, MDC1200_ARG_POST_ID,
+                             gEeprom.MDC1200_ID, gEeprom.MDC1200_PREAMBLE,
+                             gEeprom.MDC1200_TONE_MODE,
+                             gEeprom.MDC1200_REPEAT);
     }
 #endif
 

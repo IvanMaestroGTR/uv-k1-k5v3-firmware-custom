@@ -333,6 +333,10 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
         case MENU_MDC_PRE:
             *pMax = 8;
             break;
+        case MENU_MDC_REP:
+            *pMin = 1;
+            *pMax = 5;
+            break;
         case MENU_TPT:
             *pMax = ARRAY_SIZE(gSubMenu_TPT) - 1;
             break;
@@ -874,6 +878,9 @@ void MENU_AcceptSetting(void)
         case MENU_MDC_PRE:
             gEeprom.MDC1200_PREAMBLE = (uint8_t)gSubMenuSelection;
             break;
+        case MENU_MDC_REP:
+            gEeprom.MDC1200_REPEAT = (uint8_t)gSubMenuSelection;
+            break;
         case MENU_TPT:
             gEeprom.TALK_PERMIT_TONE = gSubMenuSelection;
             break;
@@ -1295,6 +1302,9 @@ void MENU_ShowCurrentSetting(void)
             break;
         case MENU_MDC_PRE:
             gSubMenuSelection = gEeprom.MDC1200_PREAMBLE;
+            break;
+        case MENU_MDC_REP:
+            gSubMenuSelection = gEeprom.MDC1200_REPEAT;
             break;
         case MENU_TPT:
             gSubMenuSelection = gEeprom.TALK_PERMIT_TONE;

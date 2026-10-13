@@ -269,6 +269,7 @@ typedef struct {
     MDC1200_TxMode_t      MDC1200_TX_MODE;
     bool                  MDC1200_RX_ENABLE;
     uint8_t               MDC1200_PREAMBLE;
+    uint8_t               MDC1200_REPEAT;
     MDC1200_ToneMode_t    MDC1200_TONE_MODE;
     TPT_Mode_t            TALK_PERMIT_TONE;
 #endif

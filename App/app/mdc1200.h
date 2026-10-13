@@ -26,6 +26,9 @@ bool MDC1200_ProcessRxData(const void *buffer, unsigned int size,
 /* Selectable BK4829 hardware FFSK (classic) or tone-generator (rail) TX. */
 bool MDC1200_Send(uint8_t op, uint8_t arg, uint16_t unitId,
                   uint8_t preambleCycles, uint8_t toneMode);
+bool MDC1200_SendRepeated(uint8_t op, uint8_t arg, uint16_t unitId,
+                          uint8_t preambleCycles, uint8_t toneMode,
+                          uint8_t repeatCount);
 
 /* Software 1200/1800 Hz FFSK receiver.  It samples discriminator audio on
  * PA4 with ADC1/TIM3 and therefore does not use the BK4829 packet modem. */
