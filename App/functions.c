@@ -187,17 +187,27 @@ void FUNCTION_Transmit()
     if (gEeprom.MDC1200_TX_MODE == MDC1200_TX_PRE ||
         gEeprom.MDC1200_TX_MODE == MDC1200_TX_BOTH) {
         /* Let the far radio's carrier detector and squelch open before the
-         * first symbol. Without this lead-in most receivers only reproduce
-         * the very end of the pre-ID burst. */
+         * first symbol. Keep REG_50 muted for the whole lead-in so that the
+         * open carrier does not expose microphone hiss before the ID. */
+        BK4819_EnterTxMute();
         SYSTEM_DelayMs(200);
         MDC1200_SendRepeated(MDC1200_OP_PTT_ID, MDC1200_ARG_PRE_ID,
                              gEeprom.MDC1200_ID, gEeprom.MDC1200_PREAMBLE,
                              gEeprom.MDC1200_TONE_MODE,
                              gEeprom.MDC1200_REPEAT);
+
+        /* MDC1200_Send() restores normal TX at the end of each burst. Mute
+         * again immediately while handing over to TPT, avoiding a short
+         * unmodulated/noisy slot between the two generators. */
+        BK4819_EnterTxMute();
     }
 
-    if (gEeprom.TALK_PERMIT_TONE != TPT_MODE_OFF)
+    if (gEeprom.TALK_PERMIT_TONE != TPT_MODE_OFF) {
         TPT_Play(gEeprom.TALK_PERMIT_TONE);
+    } else if (gEeprom.MDC1200_TX_MODE == MDC1200_TX_PRE ||
+               gEeprom.MDC1200_TX_MODE == MDC1200_TX_BOTH) {
+        BK4819_ExitTxMute();
+    }
 #endif
 
 #ifdef ENABLE_TX1750
@@ -314,3 +324,4 @@ void FUNCTION_Select(FUNCTION_Type_t Function)
         gFM_RestoreCountdown_10ms = 0;
 #endif
 }
+
