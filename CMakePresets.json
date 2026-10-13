@@ -36,6 +36,7 @@
                 "ENABLE_DTMF_CALLING": false,
                 "ENABLE_FLASHLIGHT": true,
                 "ENABLE_SPECTRUM": false,
+                "ENABLE_MDC1200": true,
                 "ENABLE_BIG_FREQ": true,
                 "ENABLE_SMALL_BOLD": true,
                 "ENABLE_CUSTOM_MENU_LAYOUT": true,
@@ -110,6 +111,7 @@
             "cacheVariables": {
                 "ENABLE_FEAT_F4HWN_QRCODE": true,
                 "ENABLE_FEAT_F4HWN_MEM": true,
+                "ENABLE_FEAT_F4HWN_LOGO": true,
                 "EDITION_STRING": "Custom",
                 "TARGET": "f4hwn.custom"
             }
@@ -212,8 +214,7 @@
                 "ENABLE_FEAT_F4HWN_GAME": true,
                 "ENABLE_FEAT_F4HWN_OVERLAY_APPS": false,
                 "EDITION_STRING": "Max",
-                "TARGET": "f4hwn.max",
-                "ENABLE_LTO": true
+                "TARGET": "f4hwn.max"
             }
         }
     ],
@@ -244,3 +245,4 @@
         }
     ]
 }
+
