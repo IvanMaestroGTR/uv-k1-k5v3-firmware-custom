@@ -75,9 +75,6 @@ void TPT_Play(uint8_t mode)
     AUDIO_AudioPathOff();
     BK4819_SetAF(BK4819_AF_MUTE);
     BK4819_WriteRegister(BK4819_REG_30, 0xC1FE);
-    /* Allow the AF/TX path to settle while muted. Unmuting in the same instant
-     * as the path switch can put a short click or hiss on air before speech. */
-    SYSTEM_DelayMs(10);
     BK4819_ExitTxMute();
 }
 

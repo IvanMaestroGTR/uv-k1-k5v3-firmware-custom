@@ -395,16 +395,8 @@ bool MDC1200_SendRepeated(uint8_t op, uint8_t arg, uint16_t unitId,
         repeatCount = 5u;
 
     bool sent = false;
-    for (uint8_t repeat = 0; repeat < repeatCount; ++repeat) {
+    for (uint8_t repeat = 0; repeat < repeatCount; ++repeat)
         sent |= MDC1200_Send(op, arg, unitId, preambleCycles, toneMode);
-        if (repeat + 1u < repeatCount) {
-            /* Suppress microphone hiss between packets. Twenty milliseconds
-             * still gives the tone generator a clean boundary while making
-             * repeated IDs sound nearly continuous. */
-            BK4819_EnterTxMute();
-            SYSTEM_DelayMs(20);
-        }
-    }
     return sent;
 }
 

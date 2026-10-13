@@ -186,28 +186,22 @@ void FUNCTION_Transmit()
 #ifdef ENABLE_MDC1200
     if (gEeprom.MDC1200_TX_MODE == MDC1200_TX_PRE ||
         gEeprom.MDC1200_TX_MODE == MDC1200_TX_BOTH) {
-        /* Let the far radio's carrier detector and squelch open before the
-         * first symbol. Keep REG_50 muted for the whole lead-in so that the
-         * open carrier does not expose microphone hiss before the ID. */
-        BK4819_EnterTxMute();
-        SYSTEM_DelayMs(200);
+        /* Open the far radio's squelch with modulated preamble, rather than an
+         * unmodulated carrier plus an extra mic mute/unmute transition. The
+         * latter produces an audible pop on BK4829 when speech is enabled. */
+        uint8_t preamble = gEeprom.MDC1200_PREAMBLE;
+        const uint8_t minimumPreamble =
+            gEeprom.MDC1200_TONE_MODE == MDC1200_TONE_CLASSIC ? 4u : 8u;
+        if (preamble < minimumPreamble)
+            preamble = minimumPreamble;
         MDC1200_SendRepeated(MDC1200_OP_PTT_ID, MDC1200_ARG_PRE_ID,
-                             gEeprom.MDC1200_ID, gEeprom.MDC1200_PREAMBLE,
+                             gEeprom.MDC1200_ID, preamble,
                              gEeprom.MDC1200_TONE_MODE,
                              gEeprom.MDC1200_REPEAT);
-
-        /* MDC1200_Send() restores normal TX at the end of each burst. Mute
-         * again immediately while handing over to TPT, avoiding a short
-         * unmodulated/noisy slot between the two generators. */
-        BK4819_EnterTxMute();
     }
 
-    if (gEeprom.TALK_PERMIT_TONE != TPT_MODE_OFF) {
+    if (gEeprom.TALK_PERMIT_TONE != TPT_MODE_OFF)
         TPT_Play(gEeprom.TALK_PERMIT_TONE);
-    } else if (gEeprom.MDC1200_TX_MODE == MDC1200_TX_PRE ||
-               gEeprom.MDC1200_TX_MODE == MDC1200_TX_BOTH) {
-        BK4819_ExitTxMute();
-    }
 #endif
 
 #ifdef ENABLE_TX1750
