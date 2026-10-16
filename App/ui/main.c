@@ -2460,7 +2460,7 @@ void UI_DisplayMain(void)
             center_line = CENTER_LINE_MDC1200;
             strcpy(String, "ID: ");
             MDC1200_FormatUnitId(String + 4, gMdc1200LastUnitId);
-            UI_PrintStringSmall(String, 2, 0, 3);
+            UI_PrintStringSmallNormal(String, 2, 0, 3);
 
             // Match TrueMDC's inverted MDC receive-ID popup.
             for (uint8_t i = 1; i < 127; i++) {
@@ -2479,56 +2479,7 @@ void UI_DisplayMain(void)
 #endif
         if (rx || gCurrentFunction == FUNCTION_FOREGROUND || gCurrentFunction == FUNCTION_POWER_SAVE)
         {
-            #if 1
-                if (gSetting_live_DTMF_decoder &&
-#ifdef ENABLE_FEAT_F4HWN_FULL_WATCH
-                    gEeprom.DUAL_WATCH != DUAL_WATCH_FULL &&
-#endif
-                    gDTMF_RX_live[0] != 0 && gKeypadLocked == 0)
-                {   // show live DTMF decode
-                    const unsigned int len = strlen(gDTMF_RX_live);
-                    const unsigned int idx = (len > (17 - 5)) ? len - (17 - 5) : 0;  // limit to last 'n' chars
-
-                    if (gScreenToDisplay != DISPLAY_MAIN
-#ifdef ENABLE_DTMF_CALLING
-                        || gDTMF_CallState != DTMF_CALL_STATE_NONE
-#endif
-                        )
-                        return;
-
-                    center_line = CENTER_LINE_DTMF_DEC;
-
-                    sprintf(String, "DTMF %s", gDTMF_RX_live + idx);
-#ifdef ENABLE_FEAT_F4HWN
-                    if (isMainOnly())
-                    {
-                        UI_PrintStringSmallNormal(String, 2, 0, 5);
-                    }
-                    else
-                    {
-                        UI_PrintStringSmallNormal(String, 2, 0, 3);
-                    }
-#else
-                    UI_PrintStringSmallNormal(String, 2, 0, 3);
-
-#endif
-                }
-            #else
-                if (gSetting_live_DTMF_decoder && gDTMF_RX_index > 0)
-                {   // show live DTMF decode
-                    const unsigned int len = gDTMF_RX_index;
-                    const unsigned int idx = (len > (17 - 5)) ? len - (17 - 5) : 0;  // limit to last 'n' chars
-
-                    if (gScreenToDisplay != DISPLAY_MAIN ||
-                        gDTMF_CallState != DTMF_CALL_STATE_NONE)
-                        return;
-
-                    center_line = CENTER_LINE_DTMF_DEC;
-
-                    sprintf(String, "DTMF %s", gDTMF_RX_live + idx);
-                    UI_PrintStringSmallNormal(String, 2, 0, 3);
-                }
-            #endif
+            /* Live DTMF display removed to recover flash for MDC1200. */
 
 #ifdef ENABLE_SHOW_CHARGE_LEVEL
             else if (gChargingWithTypeC)
