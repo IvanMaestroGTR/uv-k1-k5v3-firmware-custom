@@ -1266,7 +1266,6 @@ void UI_DisplayMenu(void)
 #ifdef ENABLE_DTMF_CALLING
         case MENU_D_DCD:
 #endif
-        case MENU_D_LIVE_DEC:
         #ifdef ENABLE_NOAA
             case MENU_NOAA_S:
         #endif
