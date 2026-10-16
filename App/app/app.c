@@ -1178,29 +1178,24 @@ static void CheckRadioInterrupts(void)
 //      if (ctcss_shift > 0)
 //          g_CTCSS_Lost = true;
 
-        if (interrupts.dtmf5ToneFound) {    
-            const char c = DTMF_GetCharacter(BK4819_GetDTMF_5TONE_Code()); // save the RX'ed DTMF character
-            if (c != 0xff) {
-                if (gCurrentFunction != FUNCTION_TRANSMIT) {
-                    /* Live DTMF collection removed; retain DTMF TX and optional calling paths. */
 #ifdef ENABLE_DTMF_CALLING
-                    if (gRxVfo->DTMF_DECODING_ENABLE || gSetting_KILLED) {
-                        if (gDTMF_RX_index >= sizeof(gDTMF_RX) - 1) { // make room
-                            memmove(&gDTMF_RX[0], &gDTMF_RX[1], sizeof(gDTMF_RX) - 1);
-                            gDTMF_RX_index--;
-                        }
-                        gDTMF_RX[gDTMF_RX_index++] = c;
-                        gDTMF_RX[gDTMF_RX_index]   = 0;
-                        gDTMF_RX_timeout           = DTMF_RX_timeout_500ms;  // time till we delete it
-                        gDTMF_RX_pending           = true;
-                        
-                        SYSTEM_DelayMs(3);//fix DTMF not reply@Yurisu
-                        DTMF_HandleRequest();
-                    }
-#endif
+        if (interrupts.dtmf5ToneFound) {
+            const char c = DTMF_GetCharacter(BK4819_GetDTMF_5TONE_Code());
+            if (c != 0xff && gCurrentFunction != FUNCTION_TRANSMIT &&
+                (gRxVfo->DTMF_DECODING_ENABLE || gSetting_KILLED)) {
+                if (gDTMF_RX_index >= sizeof(gDTMF_RX) - 1) {
+                    memmove(&gDTMF_RX[0], &gDTMF_RX[1], sizeof(gDTMF_RX) - 1);
+                    gDTMF_RX_index--;
                 }
+                gDTMF_RX[gDTMF_RX_index++] = c;
+                gDTMF_RX[gDTMF_RX_index] = 0;
+                gDTMF_RX_timeout = DTMF_RX_timeout_500ms;
+                gDTMF_RX_pending = true;
+                SYSTEM_DelayMs(3);
+                DTMF_HandleRequest();
             }
         }
+#endif
 
         if (interrupts.cssTailFound)
             g_CxCSS_TAIL_Found = true;
