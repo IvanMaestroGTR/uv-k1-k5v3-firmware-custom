@@ -1182,18 +1182,7 @@ static void CheckRadioInterrupts(void)
             const char c = DTMF_GetCharacter(BK4819_GetDTMF_5TONE_Code()); // save the RX'ed DTMF character
             if (c != 0xff) {
                 if (gCurrentFunction != FUNCTION_TRANSMIT) {
-                    if (gSetting_live_DTMF_decoder) {
-                        size_t len = strlen(gDTMF_RX_live);
-                        if (len >= sizeof(gDTMF_RX_live) - 1) { // make room
-                            memmove(&gDTMF_RX_live[0], &gDTMF_RX_live[1], sizeof(gDTMF_RX_live) - 1);
-                            len--;
-                        }
-                        gDTMF_RX_live[len++]  = c;
-                        gDTMF_RX_live[len]    = 0;
-                        gDTMF_RX_live_timeout = DTMF_RX_live_timeout_500ms;  // time till we delete it
-                        gUpdateDisplay        = true;
-                    }
-
+                    /* Live DTMF collection removed; retain DTMF TX and optional calling paths. */
 #ifdef ENABLE_DTMF_CALLING
                     if (gRxVfo->DTMF_DECODING_ENABLE || gSetting_KILLED) {
                         if (gDTMF_RX_index >= sizeof(gDTMF_RX) - 1) { // make room
@@ -2236,25 +2225,7 @@ void APP_TimeSlice500ms(void)
         }
     }
 
-    if (gDTMF_RX_live_timeout > 0)
-    {
-        #ifdef ENABLE_RSSI_BAR
-            if (center_line == CENTER_LINE_DTMF_DEC ||
-                center_line == CENTER_LINE_NONE)  // wait till the center line is free for us to use before timing out
-        #endif
-        {
-            if (--gDTMF_RX_live_timeout == 0)
-            {
-                if (gDTMF_RX_live[0] != 0)
-                {
-                    DTMF_clear_input_box_memory();
-                    gUpdateDisplay   = true;
-                }
-            }
-        }
-    }
-
-    if (gMenuCountdown > 0)
+     if (gMenuCountdown > 0)
         if (--gMenuCountdown == 0)
             exit_menu = (gScreenToDisplay == DISPLAY_MENU); // exit menu mode
 
@@ -2669,14 +2640,7 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
             && gActionPickerKey == 0
 #endif
         ) { // exit key held pressed
-            // clear the live DTMF decoder
-            if (gDTMF_RX_live[0] != 0) {
-                DTMF_clear_input_box_memory();
-                gDTMF_RX_live_timeout = 0;
-                gUpdateDisplay        = true;
-            }
-
-            // cancel user input
+             // cancel user input
             cancelUserInputModes();
             gBeepToPlay = BEEP_1KHZ_60MS_OPTIONAL;
 
