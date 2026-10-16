@@ -205,6 +205,7 @@
             "name": "Max",
             "inherits": "Fusion",
             "cacheVariables": {
+                "ENABLE_LTO": true,
                 "ENABLE_FEAT_F4HWN_FULL_WATCH": false,
                 "ENABLE_FEAT_F4HWN_RESCUE_OPS": true,
                 "ENABLE_FEAT_F4HWN_FOXHUNT": true,
