@@ -75,15 +75,11 @@ extern uint8_t           gDTMF_InputBox_Index;
 extern bool              gDTMF_InputMode;
 extern uint8_t           gDTMF_PreviousIndex;
 
-extern char              gDTMF_RX_live[20];
-extern uint8_t           gDTMF_RX_live_timeout;
-
-extern DTMF_ReplyState_t gDTMF_ReplyState;
+ extern DTMF_ReplyState_t gDTMF_ReplyState;
 
 bool DTMF_ValidateCodes(char *pCode, const unsigned int size);
 char DTMF_GetCharacter(const unsigned int code);
-void DTMF_clear_input_box_memory(void);
-void DTMF_clear_input_box(void);
+ void DTMF_clear_input_box(void);
 void DTMF_Append(const char code);
 void DTMF_Reply(void);
 void DTMF_SendEndOfTransmission(void);
