@@ -101,6 +101,7 @@ enum
     MENU_MDC_RX,
     MENU_MDC_MOD,
     MENU_MDC_PRE,
+    MENU_MDC_REP,
     MENU_TPT,
 #endif
     MENU_VOL,

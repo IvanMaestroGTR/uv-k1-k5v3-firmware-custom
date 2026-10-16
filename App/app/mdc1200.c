@@ -385,6 +385,21 @@ bool MDC1200_Send(uint8_t op, uint8_t arg, uint16_t unitId,
     return true;
 }
 
+bool MDC1200_SendRepeated(uint8_t op, uint8_t arg, uint16_t unitId,
+                          uint8_t preambleCycles, uint8_t toneMode,
+                          uint8_t repeatCount)
+{
+    if (repeatCount < 1u)
+        repeatCount = 1u;
+    if (repeatCount > 5u)
+        repeatCount = 5u;
+
+    bool sent = false;
+    for (uint8_t repeat = 0; repeat < repeatCount; ++repeat)
+        sent |= MDC1200_Send(op, arg, unitId, preambleCycles, toneMode);
+    return sent;
+}
+
 void MDC1200_Init(void)
 {
     gMdc1200LastOp = 0;
@@ -393,3 +408,4 @@ void MDC1200_Init(void)
     gMdc1200RxDisplayTicks = 0;
     MDC1200_ResetRx();
 }
+

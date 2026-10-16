@@ -186,9 +186,18 @@ void FUNCTION_Transmit()
 #ifdef ENABLE_MDC1200
     if (gEeprom.MDC1200_TX_MODE == MDC1200_TX_PRE ||
         gEeprom.MDC1200_TX_MODE == MDC1200_TX_BOTH) {
-        MDC1200_Send(MDC1200_OP_PTT_ID, MDC1200_ARG_PRE_ID,
-                     gEeprom.MDC1200_ID, gEeprom.MDC1200_PREAMBLE,
-                     gEeprom.MDC1200_TONE_MODE);
+        /* Open the far radio's squelch with modulated preamble, rather than an
+         * unmodulated carrier plus an extra mic mute/unmute transition. The
+         * latter produces an audible pop on BK4829 when speech is enabled. */
+        uint8_t preamble = gEeprom.MDC1200_PREAMBLE;
+        const uint8_t minimumPreamble =
+            gEeprom.MDC1200_TONE_MODE == MDC1200_TONE_CLASSIC ? 4u : 8u;
+        if (preamble < minimumPreamble)
+            preamble = minimumPreamble;
+        MDC1200_SendRepeated(MDC1200_OP_PTT_ID, MDC1200_ARG_PRE_ID,
+                             gEeprom.MDC1200_ID, preamble,
+                             gEeprom.MDC1200_TONE_MODE,
+                             gEeprom.MDC1200_REPEAT);
     }
 
     if (gEeprom.TALK_PERMIT_TONE != TPT_MODE_OFF)
@@ -309,3 +318,4 @@ void FUNCTION_Select(FUNCTION_Type_t Function)
         gFM_RestoreCountdown_10ms = 0;
 #endif
 }
+

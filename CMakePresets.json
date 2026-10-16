@@ -111,6 +111,7 @@
             "cacheVariables": {
                 "ENABLE_FEAT_F4HWN_QRCODE": true,
                 "ENABLE_FEAT_F4HWN_MEM": true,
+                "ENABLE_FEAT_F4HWN_LOGO": true,
                 "EDITION_STRING": "Custom",
                 "TARGET": "f4hwn.custom"
             }
@@ -244,3 +245,4 @@
         }
     ]
 }
+

@@ -315,7 +315,7 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
      * erased radios and older config banks on safe defaults. */
     PY25Q16_ReadBuffer(0x00A178, Data, 8);
     if (Data[0] == 'M' && Data[1] == 'D' &&
-        (Data[2] == 1 || Data[2] == 2)) {
+        (Data[2] >= 1 && Data[2] <= 3)) {
         /* Version 1 stored the removed Roger setting in 0EA9.  Do not
          * reinterpret it as RxLED; migrate to the 9M2RTX blink default. */
         if (Data[2] == 1)
@@ -328,6 +328,10 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
         gEeprom.MDC1200_ID = (uint16_t)Data[4] | ((uint16_t)Data[5] << 8);
         gEeprom.MDC1200_PREAMBLE = Data[6] <= 8u ? Data[6] : 2u;
         gEeprom.TALK_PERMIT_TONE = Data[7] <= TPT_MODE_AUTO ? Data[7] : TPT_MODE_OFF;
+        gEeprom.MDC1200_REPEAT = Data[2] >= 3
+                               ? (uint8_t)(((Data[3] >> 2) & 0x07u) + 1u) : 1u;
+        if (gEeprom.MDC1200_REPEAT > 5u)
+            gEeprom.MDC1200_REPEAT = 1u;
     } else {
         gEeprom.RX_LIGHT_MODE = RX_LIGHT_MODE_BLINK;
         gEeprom.MDC1200_TX_MODE = MDC1200_TX_OFF;
@@ -335,6 +339,7 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
         gEeprom.MDC1200_TONE_MODE = MDC1200_TONE_CLASSIC;
         gEeprom.MDC1200_ID = 1;
         gEeprom.MDC1200_PREAMBLE = 2;
+        gEeprom.MDC1200_REPEAT = 1;
         gEeprom.TALK_PERMIT_TONE = TPT_MODE_OFF;
     }
 #endif
@@ -1155,8 +1160,11 @@ void SETTINGS_SaveSettings(void)
     State = SecBuf;
     State[0] = 'M';
     State[1] = 'D';
-    State[2] = 2;
+    State[2] = 3;
     State[3] = (uint8_t)gEeprom.MDC1200_TX_MODE |
+               (uint8_t)(((gEeprom.MDC1200_REPEAT >= 1u &&
+                            gEeprom.MDC1200_REPEAT <= 5u
+                           ? gEeprom.MDC1200_REPEAT : 1u) - 1u) << 2) |
                (gEeprom.MDC1200_TONE_MODE == MDC1200_TONE_RAIL ? 0x40u : 0u) |
                (gEeprom.MDC1200_RX_ENABLE ? 0x80u : 0u);
     State[4] = (uint8_t)gEeprom.MDC1200_ID;

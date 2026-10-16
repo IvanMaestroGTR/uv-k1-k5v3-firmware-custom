@@ -118,6 +118,7 @@ const t_menu_item MenuList[] =
     {"MDCRx",       MENU_MDC_RX        },
     {"MDCMod",      MENU_MDC_MOD       },
     {"MDCPre",      MENU_MDC_PRE       },
+    {"MDCRep",      MENU_MDC_REP       },
     {"TPT",         MENU_TPT           },
 #endif
     {"STE",         MENU_STE           },
@@ -667,6 +668,7 @@ static const uint8_t CatRadio[]   = { MENU_SQL, MENU_STE, MENU_RP_STE, MENU_RX_L
     MENU_MDC_RX,
     MENU_MDC_MOD,
     MENU_MDC_PRE,
+    MENU_MDC_REP,
     MENU_TPT,
 #endif
     MENU_VOX, MENU_TDR };
@@ -1542,6 +1544,11 @@ void UI_DisplayMenu(void)
 
         case MENU_MDC_PRE:
             sprintf(String, "%u CYCLE", (unsigned int)gSubMenuSelection);
+            break;
+
+        case MENU_MDC_REP:
+            sprintf(String, "%u TIME%s", (unsigned int)gSubMenuSelection,
+                    gSubMenuSelection == 1 ? "" : "S");
             break;
 
         case MENU_TPT:

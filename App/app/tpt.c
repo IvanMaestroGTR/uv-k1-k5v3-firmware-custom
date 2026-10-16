@@ -77,3 +77,4 @@ void TPT_Play(uint8_t mode)
     BK4819_WriteRegister(BK4819_REG_30, 0xC1FE);
     BK4819_ExitTxMute();
 }
+
