@@ -2458,11 +2458,15 @@ void UI_DisplayMain(void)
 #ifdef ENABLE_MDC1200
         if (gMdc1200RxDisplayTicks > 0 && gKeypadLocked == 0) {
             center_line = CENTER_LINE_MDC1200;
-            strcpy(String, "MDC ");
+            strcpy(String, "ID: ");
             MDC1200_FormatUnitId(String + 4, gMdc1200LastUnitId);
-            UI_PrintStringSmallNormal(String, 2, 0,
-                (gEeprom.DUAL_WATCH == DUAL_WATCH_OFF &&
-                 gEeprom.CROSS_BAND_RX_TX == CROSS_BAND_OFF) ? 5 : 3);
+            UI_PrintStringSmall(String, 2, 0, 3);
+
+            // Match TrueMDC's inverted MDC receive-ID popup.
+            for (uint8_t i = 1; i < 127; i++) {
+                gFrameBuffer[2][i] ^= 0x80;
+                gFrameBuffer[3][i] ^= 0xFF;
+            }
         }
         else
 #endif
