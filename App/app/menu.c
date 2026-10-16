@@ -830,17 +830,7 @@ void MENU_AcceptSetting(void)
             return;
 #endif
 
-        case MENU_D_LIVE_DEC:
-            gSetting_live_DTMF_decoder = gSubMenuSelection;
-            gDTMF_RX_live_timeout = 0;
-            DTMF_clear_input_box_memory();
-            if (!gSetting_live_DTMF_decoder)
-                BK4819_DisableDTMF();
-            gFlagReconfigureVfos     = true;
-            gUpdateStatus            = true;
-            break;
-
-#ifdef ENABLE_DTMF_CALLING
+ #ifdef ENABLE_DTMF_CALLING
         case MENU_D_LIST:
             gDTMF_chosen_contact = gSubMenuSelection - 1;
             if (gIsDtmfContactValid)
@@ -1275,11 +1265,7 @@ void MENU_ShowCurrentSetting(void)
             gSubMenuSelection = gDTMF_chosen_contact + 1;
             break;
 #endif
-        case MENU_D_LIVE_DEC:
-            gSubMenuSelection = gSetting_live_DTMF_decoder;
-            break;
-
-        case MENU_PONMSG:
+         case MENU_PONMSG:
             gSubMenuSelection = gEeprom.POWER_ON_DISPLAY_MODE;
             break;
 
