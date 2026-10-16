@@ -387,7 +387,6 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
 #ifdef ENABLE_DTMF_CALLING
         case MENU_D_DCD:
 #endif
-        case MENU_D_LIVE_DEC:
         #ifdef ENABLE_NOAA
             case MENU_NOAA_S:
         #endif
