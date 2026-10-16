@@ -246,8 +246,6 @@ void ACTION_Scan(bool bRestart)
 #ifdef ENABLE_DTMF_CALLING
     DTMF_clear_RX();
 #endif
-    gDTMF_RX_live_timeout = 0;
-    DTMF_clear_input_box_memory();
 
     RADIO_SelectVfos();
 
