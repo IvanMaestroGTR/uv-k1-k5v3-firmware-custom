@@ -40,10 +40,7 @@ uint8_t           gDTMF_InputBox_Index = 0;
 bool              gDTMF_InputMode      = false;
 uint8_t           gDTMF_PreviousIndex  = 0;
 
-char              gDTMF_RX_live[20];
-uint8_t           gDTMF_RX_live_timeout = 0;
-
-#ifdef ENABLE_DTMF_CALLING
+ #ifdef ENABLE_DTMF_CALLING
 char              gDTMF_RX[17];
 uint8_t           gDTMF_RX_index   = 0;
 uint8_t           gDTMF_RX_timeout = 0;
@@ -212,11 +209,7 @@ DTMF_CallMode_t DTMF_CheckGroupCall(const char *pMsg, const unsigned int size)
 }
 #endif
 
-void DTMF_clear_input_box_memory() {
-    memset(gDTMF_RX_live, 0, sizeof(gDTMF_RX_live));
-}
-
-void DTMF_clear_input_box(void)
+ void DTMF_clear_input_box(void)
 {
     memset(gDTMF_InputBox, 0, sizeof(gDTMF_InputBox));
     gDTMF_InputBox_Index = 0;
