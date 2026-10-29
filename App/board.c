@@ -24,6 +24,9 @@
 #ifdef ENABLE_MDC1200
     #include "app/mdc1200.h"
 #endif
+#ifdef ENABLE_FEAT_F4HWN_OVERLAY_APPS
+    #include "apps/app_overlay.h"
+#endif
 #include "py32f071_ll_bus.h"
 #include "py32f071_ll_gpio.h"
 #include "py32f071_ll_rcc.h"
@@ -176,15 +179,20 @@ void BOARD_ADC_Init(void)
 
 void BOARD_ADC_GetBatteryInfo(uint16_t *pVoltage, uint16_t *pCurrent)
 {
-    static uint16_t lastVoltage;
 #ifdef ENABLE_MDC1200
-    /* ADC1 is externally triggered by TIM3 while the MDC demodulator runs.
-     * Starting a software conversion in that state would wait forever. */
+    static uint16_t lastVoltage;
+    /* The MDC receiver owns ADC1/TIM3 until it is stopped. A software
+     * battery conversion must not wait on its external trigger. */
     if (MDC1200_AppRxSampling()) {
         *pVoltage = lastVoltage;
         *pCurrent = 0;
         return;
     }
+#endif
+#ifdef ENABLE_FEAT_F4HWN_OVERLAY_APPS
+    /* An overlay app may hold the ADC on PA4 (RX audio capture): the battery
+     * channel back for this conversion, whoever asks for it. */
+    const bool capture = APP_AfCaptureYieldAdc();
 #endif
     LL_ADC_REG_StartConversionSWStart(ADC1);
     while (!LL_ADC_IsActiveFlag_EOS(ADC1))
@@ -192,8 +200,14 @@ void BOARD_ADC_GetBatteryInfo(uint16_t *pVoltage, uint16_t *pCurrent)
     LL_ADC_ClearFlag_JEOS(ADC1);
 
     *pVoltage = LL_ADC_REG_ReadConversionData12(ADC1);
+#ifdef ENABLE_MDC1200
     lastVoltage = *pVoltage;
+#endif
     *pCurrent = 0;
+#ifdef ENABLE_FEAT_F4HWN_OVERLAY_APPS
+    if (capture)
+        APP_AfCaptureResumeAdc();
+#endif
 }
 
 void BOARD_Init(void)

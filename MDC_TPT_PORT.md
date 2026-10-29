@@ -1,7 +1,30 @@
 # MDC1200 and TPT port for UV-K1 / UV-K5 V3
 
-This tree is based on F4HWN v6.1.0 for the PY32F071/BK4829 platform, from
-upstream commit `daec4b82e8c54813402f324074f54cb5c0a77025` (2026-10-10).
+This tree is based on F4HWN v6.3.0 plus the upstream main-branch updates through
+`3574e942e0d69bc2cb59eb913b8d4744a7739113` (2026-10-26 UTC), for the
+PY32F071/BK4829 platform. The MDC1200/TPT implementation, menu settings,
+settings storage and receive popup are retained from the collaboration fork.
+
+## Overlay apps after the upstream update
+
+- Labs enables overlay apps with ABI major 1 / API level 3 and 48 app slots.
+- Fusion, Transfer, FieldOps, Custom and Max retain their existing app-disabled
+  configurations. The additional upstream Fusion_ preset also enables apps;
+  Service_ does not.
+- Use the app files built from this source revision. They are linked at the
+  pinned overlay address `0x20000280`, with at most 4096 bytes of code/data.
+- The modal app launcher stops resident MDC receive sampling before an app
+  takes over the ADC, timer and DAC. Normal MDC receive resumes from the main
+  loop after the app returns; it does not decode in the background during apps.
+- Battery reads retain the last valid value while MDC owns the ADC. During
+  an overlay capture, the upstream ADC yield/resume path remains in use.
+- Labs and Max enable LTO for Flash headroom. The multiboot restore stub is
+  compiled without LTO so its RAM isolation remains checked after linking.
+
+Build validation uses ARM GNU Toolchain 13.3.Rel1, matching the upstream Docker
+image. Firmware builds, the multiboot isolation gate, MDC golden vectors and
+the 40 non-test app builds are checked. These checks do not replace on-radio
+MDC interoperability and ADC/app transition testing.
 
 ## Current status
 

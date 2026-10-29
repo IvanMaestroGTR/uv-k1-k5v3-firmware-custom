@@ -116,6 +116,10 @@ target_link_libraries(${EXE_NAME} ${TOOLCHAIN_LINK_LIBRARIES})
 
 if(ENABLE_LTO)
     target_compile_options(${EXE_NAME} PRIVATE -flto=auto)
+    # Keep the restore stub inspectable by the post-link isolation gate.
+    # Its object relocations cannot be checked in an LTO intermediate file.
+    set_source_files_properties(App/driver/mb_flash.c PROPERTIES
+        COMPILE_OPTIONS "-fno-lto")
 endif()
 
 # Generate map file
