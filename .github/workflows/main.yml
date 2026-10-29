@@ -3,6 +3,8 @@ name: Build Firmware
 on:
   push:
     branches: [ main ]
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -14,6 +16,7 @@ jobs:
 
     - name: Compile firmware
       run: |
+        python3 tools/verify_mdc1200.py
         chmod +x compile-firmware.sh compile-app.sh
         ./compile-firmware.sh All
         ./compile-app.sh All
